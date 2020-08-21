@@ -1,23 +1,31 @@
 <?php
 declare(strict_types=1);
 
+
 const EOL = PHP_EOL;
 const EOLx2 = EOL . EOL;
 const EOLx3 = EOL . EOL . EOL;
-class VersionUpdater
+class SemanticVersion
 {
 
-
     private $currentVersionFile = 'current_version.json';
-    private $selfName = 'semver.php';
+
+    /**
+     * Name of this script to reference ie in help, is set in constructor
+     *
+     * @var string
+     * see __construct()
+     */
+    private $selfName = '';
     // TODO to handle with init, set update methods and keep it in current_version.json
     private $repository = 'https://github.com/biesior/version-updater/tree/';
     private $title = 'Version updater for project' . EOLx2;
-    private $debug = false;
-    private $emulateGLaDOS = true;
-    private $colorsEnabled = true;
     // TODO to handle with init, set update methods and keep it in current_version.json
-    private $isVersionDisplayOnWebAllowed = true;
+    private $isVersionDisplayOnWebAllowed = false;
+
+    private $isDebugEnabled = false;
+    private $isColorsEnabled = true;
+    private $isMarkdownOutput = false;
 
 
     /**
@@ -25,13 +33,17 @@ class VersionUpdater
      */
     public function __construct()
     {
-        $env = $this->getCurrentEnv();
+//        $foo = 'x';
+//        echo "foo bar {$foo} baz {$this->ansiRed()} endiii" . self::COLOR . $this->ansiEnd();
+//
+//        die();
+        $env = $this->checkCurrentEnv();
         if ($env == 'web' && count($_GET) == 0 && count($_POST) == 0) {
             if (!$this->isVersionDisplayOnWebAllowed) {
                 die('These data are protected. Bye!');
             }
             $currentVersionDisplayed = 'No current version';
-            $currentVersion = $this->getCurrentVersionFromFile(true);
+            $currentVersion = $this->fetchCurrentVersionFromFile(true);
             if (is_array($currentVersion)) {
                 $currentVersion = json_encode($currentVersion, JSON_PRETTY_PRINT);
             }
@@ -41,32 +53,52 @@ class VersionUpdater
             die(PHP_EOL . 'This script can be only executed in the CLI, bye!' . EOLx2);
         };
 
-//        echo EOLx2;
-//        echo $this->____cliActions() . EOLx2;
-//        echo $this->____helperMethods() . EOLx2;
-//        echo $this->____publicStaticMethods().EOLx2;
-//        echo $this->____methodsForGettingCurrentVersion() . EOLx2;
-//        echo EOLx2;
-//        die();
 
+        $this->selfName = basename(__FILE__);
         $parameters = array(
             'c' => 'clean',
             'x' => 'extract-colors',
-            'debug'
+            'debug',
+            'markdown'
         );
-        $options = getopt(implode('', array_keys($parameters)), $parameters);
+        $parameters = [
 
+            'mixed' => [
+                'c' => 'clean',
+                'x' => 'extract-colors',
+            ],
+            'long'  => [
+                'debug',
+                'markdown'
+            ]
+        ];
+
+        $options = $this->getOptions($parameters);
+
+//        var_dump($options);
         if (array_key_exists('debug', $options)) {
-            $this->debug = true;
+            $this->isDebugEnabled = true;
+        }
+        if (array_key_exists('markdown', $options)) {
+            $this->isColorsEnabled = false;
+            $this->isMarkdownOutput = true;
         }
         if (array_key_exists('x', $options)) {
-            $this->colorsEnabled = false;
+            $this->isColorsEnabled = false;
         }
 
+        if ($this->isDebugEnabled) {
+            echo EOLx2;
+            echo $this->____cliActions() . EOLx2;
+            echo $this->____helperMethods() . EOLx2;
+            echo $this->____methodsForFetchingCurrentVersion() . EOLx2;
+            echo $this->____additionalOfDifferentPurposes() . EOLx2;
+            echo EOLx2;
+        }
 
         if (isset($options['c']) || isset($options['clean'])) {
             system('clear;');
-            echo ("\e[2;36m^--- For previous output scroll up \e[0m") . EOLx2;
+            echo ("\e[2;36m^--- For previous output scroll up {$this->ansiEnd()}") . EOLx2;
         }
 
         $this->dispatcher();
@@ -90,47 +122,166 @@ class VersionUpdater
     {
 
 
-        // @see:
+        $hintsObj = new SemanticVersionHints();
+
+        $hintsObj->addHeader(['Welcome to semantic-version!'], 1);
+
+//        This CLI sets or updates version according to schema and updates required files
+//
+//Please refer to these resources for more details
+//- [1;32mhttps://semver.org/spec/v2.0.0.html[0m
+//- [1;32mhttps://semver.org/spec/v2.0.0.html[0m
+
+        $hintsObj->addHeader([
+            'This CLI stript sets or updates version according to schema and updates required files',
+            'for more details please refer to these resources:',
+            '- https://semver.org/spec/v2.0.0.html',
+            '- https://en.wikipedia.org/wiki/Software_release_life_cycle',
+        ], 2);
+
+        $hintsObj
+            ->addHeader(['Help'])
+            ->addHeader(['Parameters'], 4)
+            ->addOnlyParam('h', 'help', ['Displaying this help']);
+
+
+        $hintsObj
+            ->addHeader(["Display options"], 3)
+            ->addHeader([
+                "Sample usages",
+                "- {$this->ansiGreen(true)}php {$this->selfName} -xc ...other params{$this->ansiEnd(true)} to display with clean output without colors",
+                "- {$this->ansiGreen(true)}php {$this->selfName} -hxc{$this->ansiEnd(true)} to displays monochromatic help with clean output.",
+                "- {$this->ansiGreen(true)}php {$this->selfName} -h --markdown > HELP.md{$this->ansiEnd(true)} to display this help as a markdown and ie save it to file.",
+                "- etc"
+            ], 4)
+            ->addHeader(['Parameters'], 4)
+            ->addFirstParam('c', 'clean', ['If set console will be cleaned for better output'])
+            ->addNextParam('x', null, [
+                    "Extract colors, i.e. if you want to write the output to file like ",
+                    "{$this->ansiGreen(true)}php {$this->selfName} -h > version-help-color.txt{$this->ansiEnd(true)}",
+                    "{$this->ansiGreen(true)}php {$this->selfName} -hx > version-help-mono.txt{$this->ansiEnd(true)}"
+                ]
+            )
+            ->addNextParam(null, 'markdown', [
+                'If set help will be generated in markdown format, i.e.',
+                "{$this->ansiGreen(true)}php {$this->selfName} -h --markdown > HELP.md{$this->ansiEnd(true)}",
+            ])
+            ->addLastParam(null, 'debug', [
+                'If set some debug will occure, of course it\'s only for development stage',
+            ]);
+
+
+        $hintsObj
+            ->addHeader(["Init, set, update or kill"])
+            ->addHeader(['Parameters'], 4)
+            ->addFirstParam('i:', 'init:', [
+                    'Create new version by default it will be `0.0.1-alpha`',
+                    '- you can change it immediately using -m `set` or `update`'
+                ]
+            )
+            ->addNextParam(null, 'repository:', ["Repository URL ie {$this->ansiGreen(true)}https://github.com/biesior/version-updater/{$this->ansiEnd(true)}"])
+            ->addNextParam('m:', 'mode:', [
+                    'Mode can be `set` or `update` ',
+                    '- When mode is `set` params `-n` or `--new-version` and `-s` or `--state` are required ',
+                    '- When mode is `update` param `-p, --part` is required'
+                ]
+            )
+            ->addNextParam('n:', 'new-version', ['Version which should be set like 1.2.3'])
+            ->addNextParam('s:', 'state:', ['State which should be set like alpha, beta , stable'])
+            ->addNextParam('p:', 'part:', ['Part to update allowed `major`, `minor`, `patch`'])
+            ->addNextParam('v', 'version', ['Displays current version of the project'])
+            ->addLastParam(null, 'kill::', ["({$this->ansiRed()}destructive!{$this->ansiEnd()}) Deletes version file, you will need to start from beginning"])//            ->endGroup($group)
+        ;
+
+
+        $hintsObj
+            ->addHeader([
+                'Rise params',
+                'You can just upgrade existing project with PATCH, MINOR or MAJOR version like'
+            ])
+            ->addHeader(['Parameters'], 4)
+            ->addFirstParam(null, 'patch', ["Increases PATCH version i.e.: {$this->ansiGreen(true)}0.1.0-alpha{$this->ansiEnd(true)} > {$this->ansiGreen(true)}0.1.1-alpha{$this->ansiEnd(true)}"])
+            ->addNextParam(null, 'minor', ["Increases MINOR version i.e.: {$this->ansiGreen(true)}0.1.1-alpha{$this->ansiEnd(true)} > {$this->ansiGreen(true)}0.2.0-alpha{$this->ansiEnd(true)}"])
+            ->addNextParam(null, 'major', ["Increases MINOR version i.e.: {$this->ansiGreen(true)}0.2.0-alpha{$this->ansiEnd(true)} > {$this->ansiGreen(true)}1.0.0-alpha{$this->ansiEnd(true)}"])
+            ->addLastParam(null, 'set:', [
+                "Requires one or two following params version and state",
+                "- first is version like {$this->ansiGreen(true)}1.2.3{$this->ansiEnd(true)}",
+                "- second is version like {$this->ansiGreen(true)}alpha{$this->ansiEnd(true)}"
+            ]);
+
+//        $markDownBlock = ['raw_code' => true, 'markdown' => '```'];
+//        $hints = [
+////            'group-0-start' => $markDownBlock,
+////            'h'             => ['short' => 'h', 'long' => 'help', 'hint' => 'Displaying this help'],
+////            'group-0-end'   => $markDownBlock,
+////
+////            'hint-group-1' => ['header' => "These should be placed at the beginning, i.e.: || - {$this->ansiGreen(true)}php {$this->selfName} -xc ...other params{$this->ansiEnd(true)} to display with clean output without colors || - {$this->ansiGreen(true)}php {$this->selfName} -hxc{$this->ansiEnd(true)} to displays monochromatic help with clean output || - etc."],
+////
+////            'group-1-start' => $markDownBlock,
+////            'c'             => ['short' => 'c', 'long' => 'clean', 'hint' => 'If set console will be cleaned for better output'],
+////            'x'             => ['short' => 'x', 'hint' => "Extract colors, i.e. if you want to write the output to file like || {$this->ansiGreen(true)}php {$this->selfName} -h > version-help-color.txt{$this->ansiEnd(true)} || {$this->ansiGreen(true)}php {$this->selfName} -hx > version-help-mono.txt{$this->ansiEnd(true)}"],
+////            'group-1-end'   => $markDownBlock,
+//
+////            'hint-group-2' => ['header' => "Init, set, update or kill"],
+//
+////            'group-2-start' => $markDownBlock,
+////            'i:'            => ['short' => 'i', 'long' => 'init', 'hint' => 'Create new version by default it will be `0.0.1-alpha` || - you can change it immediately using -m `set` or `update`'],
+////            'repository:'   => ['long' => 'repository', 'hint' => "Repository URL ie {$this->ansiGreen()}https://github.com/biesior/version-updater/{$this->ansiEnd()}"],
+////            'm:'            => ['short' => 'm', 'long' => 'mode', 'hint' => 'Mode can be `set` or `update` || - When mode is `set` params `-n` or `--new-version` and `-s` or `--state` are required || - When mode is `update` param `-p, --part` is required'],
+////            'n:'            => ['short' => 'n', 'long' => 'new-version', 'hint' => 'Version which should be set like 1.2.3'],
+////            's:'            => ['short' => 's', 'long' => 'state', 'hint' => 'State which should be set like alpha, beta , stable'],
+////            'p:'            => ['short' => 'p', 'long' => 'part', 'hint' => 'Part to update allowed `major`, `minor`, `patch`'],
+////            'v:'            => ['short' => 'v', 'long' => 'version', 'hint' => 'Displays current version of the project'],
+////            'kill::'        => ['long' => 'kill', 'hint' => "({$this->ansiRed()}destructive!{$this->ansiEnd()}) Deletes version file, you will need to start from beginning"],
+////            'group-2-end'   => $markDownBlock,
+//
+////            'hint-group-3' => ['header' => "Rise params ||||You can just upgrade existing project with PATCH, MINOR or MAJOR version like || "],
+//
+////            'group-3-start' => $markDownBlock,
+////            'patch'         => ['long' => 'patch', 'hint' => "Increases PATCH version i.e.: {$this->ansiGreen()}0.1.0-alpha{$this->ansiEnd()} > {$this->ansiGreen()}0.1.1-alpha{$this->ansiEnd()}"],
+////            'minor'         => ['long' => 'minor', 'hint' => "Increases MINOR version i.e.: {$this->ansiGreen()}0.1.1-alpha{$this->ansiEnd()} > {$this->ansiGreen()}0.2.0-alpha{$this->ansiEnd()}"],
+////            'major'         => ['long' => 'major', 'hint' => "Increases MINOR version i.e.: {$this->ansiGreen()}0.2.0-alpha{$this->ansiEnd()} > {$this->ansiGreen()}1.0.0-alpha{$this->ansiEnd()}"],
+////            'set:'          => ['long' => 'set', 'hint' => "requires one or two following params version and state"],
+////            'group-3-end'   => $markDownBlock,
+//
+//
+////            'debug'         => ['long' => 'debug', 'hint' => 'If used looo...ot of debug may be displayed, use only for development'],
+//
+//        ];
+//        $hintsObj->render();
+//        die('temp die' . EOLx2);
+
+
         $parameters = [
-            'h'  => 'help',
-            'c'  => 'clean',
-            'x',
-            'patch',
-            'minor',
-            'major',
-            'i:' => 'init:',
-            'repository:',
-            'folder:',
-            'm:' => 'mode:',
-            'n:' => 'new-version:',
-            's:' => 'state:',
-            'p:' => 'part:',
-            'v:' => 'version:',
-            'kill::',
-            'debug',
-
+            'short' => [
+                'a',
+                'b'
+            ],
+            'mixed' => [
+                'h'  => 'help',
+                'c'  => 'clean',
+                'x'  => 'xtract-colors',
+                'i:' => 'init:',
+                'm:' => 'mode:',
+                'n:' => 'new-version:',
+                's:' => 'state:',
+                'p:' => 'part:',
+                'v:' => 'version:',
+            ],
+            'long'  => [
+                'patch',
+                'minor',
+                'major',
+                'repository:',
+                'folder:',
+                'set:',
+                'kill::',
+                'markdown',
+                'debug',
+            ]
         ];
 
-        $hints = [
-            'h'           => ['short' => 'h', 'long' => 'help', 'hint' => 'Displaying this help'],
-            'c'           => ['short' => 'c', 'long' => 'clean', 'hint' => 'If set console will be cleaned for better output'],
-            'i:'          => ['short' => 'i', 'long' => 'init', 'hint' => 'Create new version by default it will be `0.0.1-alpha` || - you can change it immediately using -m `set` or `update`'],
-            'repository:' => ['long' => 'repository', 'hint' => "Repository URL ie \e[32mhttps://github.com/biesior/version-updater/\e[0m"],
-            'm:'          => ['short' => 'm', 'long' => 'mode', 'hint' => 'Mode can be `set` or `update` || - When mode is `set` params `-n` or `--new-version` and `-s` or `--state` are required || - When mode is `update` param `-p, --part` is required'],
-            'n:'          => ['short' => 'n', 'long' => 'new-version', 'hint' => 'Version which should be set like 1.2.3'],
-            's:'          => ['short' => 's', 'long' => 'state', 'hint' => 'State which should be set like alpha, beta , stable'],
-            'p:'          => ['short' => 'p', 'long' => 'part', 'hint' => 'Part to update allowed `major`, `minor`, `patch`'],
-            'v:'          => ['short' => 'v', 'long' => 'version', 'hint' => 'Displays current version of the project'],
-            'x'           => ['short' => 'x', 'hint' => "Extract colors, i.e. if you want to write the output to file like || \e[32mphp {$this->selfName} --kill > output-color.txt\e[0m || \e[32mphp {$this->selfName} --kill -x > output-mono.txt\e[0m"],
-            'patch'       => ['long' => 'patch', 'hint' => "Increases PATCH version i.e.: \e[32m0.1.0-alpha\e[0m > \e[32m0.1.1-alpha\e[0m"],
-            'minor'       => ['long' => 'minor', 'hint' => "Increases MINOR version i.e.: \e[32m0.1.1-alpha\e[0m > \e[32m0.2.0-alpha\e[0m"],
-            'major'       => ['long' => 'major', 'hint' => "Increases MINOR version i.e.: \e[32m0.2.0-alpha\e[0m > \e[32m1.0.0-alpha\e[0m"],
-            'kill::'      => ['long' => 'kill', 'hint' => "(\e[31mdestructive!\e[0m) Deletes version file, you will need to start from beginning"],
-//            'debug'         => ['long' => 'debug', 'hint' => 'If used looo...ot of debug may be displayed, use only for development'],
-
-        ];
-
-        $options = getopt(implode('', array_keys($parameters)), $parameters);
+        $options = $this->getOptions($parameters);
 
         $help = $this->getOptValue($options, 'h', 'help');
         $init = $this->getOptValue($options, 'i', 'init');
@@ -140,12 +291,14 @@ class VersionUpdater
         $part = $this->getOptValue($options, 'p', 'part');
         $tree = $this->getOptValue($options, 't', 'tree');
 
-        $relesePatch = $this->getOptValue($options, null, 'patch');
-        $releseMinor = $this->getOptValue($options, null, 'minor');
-        $releseMajor = $this->getOptValue($options, null, 'major');
+
+        $releasePatch = $this->getOptValue($options, null, 'patch');
+        $releaseMinor = $this->getOptValue($options, null, 'minor');
+        $releaseMajor = $this->getOptValue($options, null, 'major');
         $kill = $this->getOptValue($options, null, 'kill');
 
-        if ($this->debug) {
+
+        if ($this->isDebugEnabled) {
             echo EOL . 'Debug resolved options' . EOL;
             print_r([
                 'help'          => $help,
@@ -154,9 +307,9 @@ class VersionUpdater
                 'new-version'   => $newVersion,
                 'state'         => $state,
                 'part'          => $part,
-                'release_patch' => $relesePatch,
-                'release_minor' => $releseMinor,
-                'release_major' => $releseMajor,
+                'release_patch' => $releasePatch,
+                'release_minor' => $releaseMinor,
+                'release_major' => $releaseMajor,
                 'kill'          => $kill,
             ]);
             echo EOL . 'Debug options' . EOL;
@@ -164,86 +317,45 @@ class VersionUpdater
         }
 
         if (!is_null($help)) {
-            $this->showHelp($parameters, $hints);
+            $this->showHelp($hintsObj);
         } elseif (!is_null($init)) {
             $this->init($init, $tree);
         } elseif (!is_null($kill)) {
             $this->kill($kill);
-        } elseif (!is_null($relesePatch)) {
+        } elseif (!is_null($releasePatch)) {
             $this->update('patch', null);
-        } elseif (!is_null($releseMinor)) {
+        } elseif (!is_null($releaseMinor)) {
             $this->update('minor', null);
-        } elseif (!is_null($releseMajor)) {
+        } elseif (!is_null($releaseMajor)) {
             $this->update('major', null);
         } elseif (!is_null($mode)) {
             if ($mode == 'set') {
                 if (is_null($newVersion) || is_null($state)) {
-                    die("\e[1;31mIf `mode` is `set`, params `-n` or `--new-version` and `-s` or `--state` are required. Bye!\e[0m" . EOLx2);
+                    die("{$this->ansiRed()}If `mode` is `set`, params `-n` or `--new-version` and `-s` or `--state` are required. Bye!{$this->ansiEnd()}" . EOLx2);
                 }
                 $version = $options['n'];
                 $state = $options['s'];
                 $this->set($version, $state);
             } elseif ($mode = 'update') {
                 if (is_null($part)) {
-                    die("\e[1;31mIf `mode` is `update`, param`-p` or `--part` is required. Bye!\e[0m" . EOLx2);
+                    die("{$this->ansiRed()}If `mode` is `update`, param`-p` or `--part` is required. Bye!{$this->ansiEnd()}" . EOLx2);
                 }
                 echo 'Make update';
             } else {
-                die(sprintf("\e[1;31mMode %s is not supported, check the help with -h parameter. Bye!\e[0m", $options['m']) . EOLx2);
+                die(sprintf("{$this->ansiRed()}Mode %s is not supported, check the help with -h parameter. Bye!{$this->ansiEnd()}", $options['m']) . EOLx2);
             }
         } else {
-            die(EOL . $this->title . "\e[1;31mInvalid parameters, check the help with -h parameter, \n\nBye!\e[0m" . EOLx2);
+            $out = EOL . $this->title . "{$this->ansiRed()}Invalid parameters, check the help with -h parameter, like:\n\n{$this->ansiGreen()}php {$this->selfName} -h{$this->ansiEnd()} \n\nBye!{$this->ansiEnd()}" . EOLx2;
+            if (!$this->isColorsEnabled) $out = SemanticVersionUtility::removeAnsi($out);
+            die($out);
         }
 
     }
 
-
-    private function showHelp($parameters, $hints)
+    private function showHelp(SemanticVersionHints $hintObj)
     {
-        $out = '';
-        $out .= EOL . 'This CLI sets or updates version according to schema and updates required files' . EOL;
-        $out .= "\e[2;37m" . str_repeat('_', 120) . "\e[0m" . EOLx2;
 
-
-        $longest = 0;
-        $toDisplay = [];
-        foreach ($hints as $hint) {
-            $keys = [];
-            if (array_key_exists('short', $hint)) {
-                $keys[] = '-' . self::removeColon($hint['short']);
-            }
-            if (array_key_exists('long', $hint)) {
-                $keys[] = '--' . self::removeColon($hint['long']);
-            };
-            $key = implode(', ', $keys);
-            $keyLen = self::stringLength($key);
-            if ($keyLen > $longest) $longest = $keyLen;
-            $toDisplay[$key] = $hint;
-        }
-//        print_r($toDisplay);
-        foreach ($toDisplay as $param => $hint) {
-            $out .= self::fillToLeft($param, $longest + 6);
-            $singleHint = $hint['hint'];
-            $hintParts = explode('||', $singleHint);
-            if (count($hintParts) > 1) {
-                foreach ($hintParts as $numb => $line) {
-                    if ($numb == 0) {
-                        $out .= trim($line) . EOL;
-                    } else {
-                        $out .= str_repeat(' ', $longest + 6) . trim($line) . EOL;
-                    }
-                }
-
-                $out .= EOL;
-            } else {
-                $out .= $singleHint . EOLx2;
-            }
-        }
-
-        if (!$this->colorsEnabled) {
-            $out = self::removeAnsi($out);
-        }
-        echo $out . EOLx2;
+        $hintObj->render($this->isMarkdownOutput, $this->isColorsEnabled);
 
     }
 
@@ -253,15 +365,15 @@ class VersionUpdater
 
         if (file_exists($this->currentVersionFile)) {
 
-            $projectName = $this->getCurrentProjectName();
-            $currentVersion = $this->getCurrentVersionToString();
-            $lastUpdated = $this->getCurrentLastUpdated();
+            $projectName = $this->fetchCurrentProjectName();
+            $currentVersion = $this->fetchCurrentVersionToString();
+            $lastUpdated = $this->fetchCurrentLastUpdated();
 
             die (sprintf(
-                    "File \e[32m%s\e[0m already exists. 
-            \nCurrent version of \e[32m%s\e[0m project is \e[32m%s\e[0m last updated at \e[32m%s\e[0m 
+                    "File {$this->ansiGreen()}%s{$this->ansiEnd()} already exists. 
+            \nCurrent version of {$this->ansiGreen()}%s{$this->ansiEnd()} project is {$this->ansiGreen()}%s{$this->ansiEnd()} last updated at {$this->ansiGreen()}%s{$this->ansiEnd()} 
             \nIf you want to re-initialize the project's version remove this file first.
-            \nInstead maybe you want update current version with --mode `set` or `update`.\nCheck the help for more details with command: \e[32mphp {$this->selfName} --help\e[0m
+            \nInstead maybe you want update current version with --mode `set` or `update`.\nCheck the help for more details with command: {$this->ansiGreen()}php {$this->selfName} --help{$this->ansiEnd()}
              ",
                     $this->currentVersionFile,
                     $projectName,
@@ -287,13 +399,13 @@ class VersionUpdater
         if (!file_exists('README.md')) {
             $fileTemplate = "## `{$projectName}` project
 
-[![State](https://img.shields.io/static/v1?label=beta&message=1.0.0&color=blue)](https://github.com/biesior/box-drawer/tree/1.0.0-beta) <!-- __VERSION_LINE__ -->
-![Updated](https://img.shields.io/static/v1?label=upated&message={$lastUpdateLink}&color=lightgray) <!-- __UPDATED_LINE__ -->";
+[![State](https://img.shields.io/static/v1?label=beta&message=1.0.0&color=blue)](https://github.com/biesior/box-drawer/tree/1.0.0-beta) <!-- __SEMANTIC_VERSION_LINE__ -->
+![Updated](https://img.shields.io/static/v1?label=upated&message={$lastUpdateLink}&color=lightgray) <!-- __SEMANTIC_UPDATED_LINE__ -->";
 
             file_put_contents('README.md', $fileTemplate);
 
         }
-        echo sprintf("Versioning for project \e[32m%s\e[0m was initialized with version \e[32m0.0.1-alpha\e[0m!", $projectName) . EOLx2;
+        echo "Versioning for project {$this->ansiGreen()}{$projectName}{$this->ansiEnd()} was initialized with version {$this->ansiGreen()}0.0.1-alpha{$this->ansiEnd()}!" . EOLx2;
     }
 
     private function kill($force = false)
@@ -301,61 +413,66 @@ class VersionUpdater
         $out = '';
 
         if (file_exists($this->currentVersionFile)) {
-            $projectName = $this->getCurrentProjectName();
-            $currentVersionLong = $this->getCurrentVersionToString();
-            $lastUpdated = $this->getCurrentLastUpdated();
+            $projectName = $this->fetchCurrentProjectName();
+            $currentVersionLong = $this->fetchCurrentVersionToString();
         } else {
-            $out = "File \e[1;32m{$this->currentVersionFile}\e[0m doesn't exist, nothing to kill.\n\nBye!" . EOLx2;
-            if (!$this->colorsEnabled) {
-                $out = self::removeAnsi($out);
+            $out = "File {$this->ansiGreen()}{$this->currentVersionFile}{$this->ansiEnd()} doesn't exist, nothing to kill.\n\nBye!" . EOLx2;
+            if (!$this->isColorsEnabled) {
+                $out = SemanticVersionUtility::removeAnsi($out);
             }
             die($out);
         }
         $renameTo = 'zzz_unused_' . time() . '_' . $this->currentVersionFile;
         if (!in_array($force, ['soft', 'hard'])) {
             $out .= 'You are trying to remove ' . $this->currentVersionFile . ' from your project and disable this functionality in it' . EOLx2;
-            $out .= "Of course it's your choice and if you are sure repeat this command with \e[32mforce\e[0m value, like" . EOLx2;
-            $out .= "\e[32mphp {$this->selfName} --kill=soft\e[0m \n\n    to rename `{$this->currentVersionFile}` to `{$renameTo}` or \n\n\e[32mphp {$this->selfName} --kill=hard\e[0m \n\n    to remove it totally";
-            if (!$this->colorsEnabled) {
-                $out = self::removeAnsi($out);
+            $out .= "Of course it's your choice and if you are sure repeat this command with {$this->ansiGreen()}force{$this->ansiEnd()} value, like" . EOLx2;
+            $out .= "{$this->ansiGreen()}php {$this->selfName} --kill=soft{$this->ansiEnd()} \n\n    to rename `{$this->currentVersionFile}` to `{$renameTo}` or \n\n{$this->ansiGreen()}php {$this->selfName} --kill=hard{$this->ansiEnd()} \n\n    to remove it totally";
+            if (!$this->isColorsEnabled) {
+                $out = SemanticVersionUtility::removeAnsi($out);
             }
             die($out . EOLx2);
         }
-        if (file_exists($this->currentVersionFile)) {
 
-            $projectName = $this->getCurrentProjectName();
-            $currentVersionLong = $this->getCurrentVersionToString();
-            $currentVersionShort = $this->getCurrentVersion();
-            $currentState = $this->getCurrentState();
-            $lastUpdated = $this->getCurrentLastUpdated();
+
+        if (file_exists($this->currentVersionFile)) {
+            $projectName = $this->fetchCurrentProjectName();
+            $currentVersionLong = $this->fetchCurrentVersionToString();
+            $currentVersionShort = $this->fetchCurrentVersion();
+            $currentState = $this->fetchCurrentState();
         }
 
-        $out .= sprintf("Versioning for project \e[32m%s\e[0m was killed, last known version was \e[32m%s\e[0m", $projectName, $currentVersionLong) . EOLx2;
+        $out .= "Versioning for project {$this->ansiGreen()}{$projectName}{$this->ansiEnd()} was killed, last known version was {$this->ansiGreen()}{$currentVersionLong}{$this->ansiEnd()}" . EOLx2;
 
         if ($force == 'soft') {
             rename($this->currentVersionFile, $renameTo);
-            $out .= sprintf("File \e[1;32m%s\e[0m was renamed to \e[1;32m%s\e[0m", $this->currentVersionFile, $renameTo);
+            $out .= "File {$this->ansiGreen()}{$this->currentVersionFile}{$this->ansiEnd()} was renamed to {$this->ansiGreen()}{$renameTo}{$this->ansiEnd()}";
         } elseif ($force == 'hard') {
             unlink($this->currentVersionFile);
-            $out .= sprintf("File \e[1;32m%s\e[0m was \e[1;31mdeleted\e[0m", $this->currentVersionFile);
+            $out .= "File {$this->ansiGreen()}{$this->currentVersionFile}{$this->ansiEnd()} was {$this->ansiRed()}deleted{$this->ansiEnd()}";
         }
         $out .= EOLx2;
 
+
+        $a = 'Some';
+        $b = 'other';
+        $c = " $b else";
+
+
         $out .= "The functionality is disabled now." . EOL;
         if ($force == 'soft') {
-            $out .= "\nYou can manually restore it by renaming the backup file to \e[1;32m{$this->currentVersionFile}\e[0m." . EOL;
+            $out .= "\nYou can manually restore it by renaming the backup file to {$this->ansiGreen()}{$this->currentVersionFile}{$this->ansiEnd()}." . EOL;
         }
         $out .= "To recreate it with last known version, initialize it again and set last known version and state like:" . EOLx2;
 
-        $out .= sprintf("\e[1;32mphp {$this->selfName} -i=\"%s\"\e[0m", $projectName) . EOL;
-        $out .= sprintf("\e[1;32mphp {$this->selfName} -m set -n %s -s %s\e[0m", $currentVersionShort, $currentState) . EOL;
+        $out .= "{$this->ansiGreen()}php {$this->selfName} -i=\"{$projectName}\"{$this->ansiEnd()}" . EOL;
+        $out .= "{$this->ansiGreen()}php {$this->selfName} -m set -n {$currentVersionShort} -s {$currentState}{$this->ansiEnd()}" . EOL;
 
 
-        $out .= EOL . "Bye \e[31m;(\e[0m" . EOLx2;
+        $out .= EOL . "Bye {$this->ansiRed()};({$this->ansiEnd()}" . EOLx2;
 
 
-        if (!$this->colorsEnabled) {
-            $out = self::removeAnsi($out);
+        if (!$this->isColorsEnabled) {
+            $out = SemanticVersionUtility::removeAnsi($out);
         }
         echo $out;
     }
@@ -368,7 +485,7 @@ class VersionUpdater
         $lastUpdate = $now->format('Y-m-d+H:i:s');
         $newVersionFull = $version . ($toState == 'stable' ? '' : '-' . $toState);
         $vers = [
-            'project_name' => $this->getCurrentProjectName(), 'version' => $version, 'state' => $toState, 'last_update' => $lastUpdate,
+            'project_name' => $this->fetchCurrentProjectName(), 'version' => $version, 'state' => $toState, 'last_update' => $lastUpdate,
         ];
         file_put_contents($this->currentVersionFile, json_encode($vers));
 
@@ -378,7 +495,7 @@ class VersionUpdater
         $this->searchAndUpdate(
             'README.md',
             "[![State](https://img.shields.io/static/v1?label=%s&message=%s&color=blue)](%s)",
-            '<!-- __VERSION_LINE__ -->',
+            '<!-- __SEMANTIC_VERSION_LINE__ -->',
             $toState, $version, $repository
         );
 
@@ -386,7 +503,7 @@ class VersionUpdater
         $this->searchAndUpdate(
             'README.md',
             "![Updated](https://img.shields.io/static/v1?label=upated&message=%s&color=lightgray)",
-            '<!-- __UPDATED_LINE__ -->',
+            '<!-- __SEMANTIC_UPDATED_LINE__ -->',
             $lastUpdate
         );
         $output .= EOLx2;
@@ -398,29 +515,30 @@ class VersionUpdater
 //        system($tagCmd);
 
 
-        if (!$this->colorsEnabled) {
-            $output = self::removeAnsi($output);
+        if (!$this->isColorsEnabled) {
+            $output = SemanticVersionUtility::removeAnsi($output);
         }
 
         $output .= "Please push your update to GitHub and don't forget to publish new release!" . EOLx2;
         $output .= 'Bye!' . EOLx2;
 
+        echo $output;
     }
 
     private function update($part, $toState = null)
     {
 
         if (is_null($toState)) {
-            $currentState = $this->getCurrentState();
+            $currentState = $this->fetchCurrentState();
             if (!is_null($currentState)) {
                 $toState = $currentState;
             } else {
-                die ("\e[31mState couldn't be retrieved. Please fix your " . $this->currentVersionFile . " fole and retry.\n\nBye!\e[0m" . EOLx2);
+                die ("{$this->ansiRed()}State couldn't be retrieved. Please fix your " . $this->currentVersionFile . " fole and retry.\n\nBye!{$this->ansiEnd()}" . EOLx2);
             }
         }
 
         $output = '';
-        $currentData = $this->getCurrentVersionFromFile();
+        $currentData = $this->fetchCurrentVersionFromFile();
         $oldVersion = $currentData['version'];
         $oldState = $currentData['state'];
         $oldVersionFull = $oldVersion . ($oldState == 'stable' ? '' : '-' . $oldState);
@@ -430,16 +548,16 @@ class VersionUpdater
         $this->set($newVersion, $toState);
         $output .= (PHP_EOL .
                 sprintf(
-                    "Your version was updated from \e[0;32m%s\e[0m to \e[0;32m%s\e[0m
+                    "Your version was updated from {$this->ansiGreen()}%s{$this->ansiEnd()} to {$this->ansiGreen()}%s{$this->ansiEnd()}
 
-To revert this change please run: \e[0;32m%s\e[0m 
+To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()} 
 ",
                     $oldVersionFull, $newVersionFull, $revertCommand
                 )
             ) . PHP_EOL;;
 
-        if (!$this->colorsEnabled) {
-            $output = self::removeAnsi($output);
+        if (!$this->isColorsEnabled) {
+            $output = SemanticVersionUtility::removeAnsi($output);
         }
         echo $output;
 
@@ -463,7 +581,7 @@ To revert this change please run: \e[0;32m%s\e[0m
     private function searchAndUpdate(string $filename, string $sprintfStr, string $lineEndsWith, ...$params)
     {
 
-        $replaced = '';
+//        $replaced = '';
         if (count($params) == 1) {
             $replaced = sprintf($sprintfStr, $params[0]);
         } else if (count($params) == 2) {
@@ -481,10 +599,10 @@ To revert this change please run: \e[0;32m%s\e[0m
 
         foreach ($txt as $lineNo => $line) {
 
-            if (self::endsWith(trim($line), trim($lineEndsWith))) {
+            if (SemanticVersionUtility::endsWith(trim($line), trim($lineEndsWith))) {
                 $txt[$lineNo] = $replaced . ' ' . $lineEndsWith . EOL;
-                echo sprintf("Changed line \e[32m%s\e[0m of \e[32m%s\e[0m to:", $lineNo, $filename) . EOL;
-                echo "\e[36m" . $replaced . EOLx2 . "\e[0m";
+                echo sprintf("Changed line {$this->ansiGreen()}%s{$this->ansiEnd()} of {$this->ansiGreen()}%s{$this->ansiEnd()} to:", $lineNo, $filename) . EOL;
+                echo "{$this->ansiCyan()}" . $replaced . EOLx2 . "{$this->ansiEnd()}";
             };
         }
         file_put_contents($filename, implode('', $txt));
@@ -527,13 +645,14 @@ To revert this change please run: \e[0;32m%s\e[0m
         $newState = ($state == 'stable') ? '' : '-' . $state;
 
         return [
-            sprintf("Generate new \e[36m%s%s\e[0m with ", $newVersion, $newState),
-            sprintf("\e[36mphp {$this->selfName} update %s\e[0m", $state)
+            sprintf("Generate new {$this->ansiCyan()}%s%s{$this->ansiEnd()} with ", $newVersion, $newState),
+            sprintf("{$this->ansiCyan()}php {$this->selfName} update %s{$this->ansiEnd()}", $state)
         ];
     }
 
+
     /**
-     * Public static methods starts here
+     * Methods for fetching current version data starts here
      *
      * DO NOT move this method in the structure without reason.
      *
@@ -541,10 +660,246 @@ To revert this change please run: \e[0;32m%s\e[0m
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
-    private function ____publicStaticMethods(): string
+    private function ____methodsForFetchingCurrentVersion(): string
     {
         return self::describeMethodItself();
     }
+
+    /**
+     * @param bool $shyData
+     *
+     * @return array
+     */
+    protected function fetchCurrentVersionFromFile($shyData = false): array
+    {
+        if (!file_exists($this->currentVersionFile)) {
+            if ($shyData) die('No data about current version or data are invalid');
+            die(sprintf("there is no `%s` file, please create it with {$this->ansiCyan()}php {$this->selfName} --init{$this->ansiEnd()} command", $this->currentVersionFile) . EOLx2);
+        }
+        $currentData = json_decode(file_get_contents($this->currentVersionFile), true);
+        if (is_null($currentData)) {
+            if ($shyData) die('No data about current version or data are invalid');
+            die(sprintf("{$this->ansiRed()}Invalid data in `%s` file.{$this->ansiEnd()}\n\nPlease fix it or remove the file and initialize your version again with: {$this->ansiGreen()}php {$this->selfName} --init{$this->ansiEnd()}", $this->currentVersionFile) . EOLx2);
+        };
+        return $currentData;
+    }
+
+    protected function fetchCurrentVersionToString()
+    {
+        $cv = $this->fetchCurrentVersionFromFile();
+        return $cv['version'] . ($cv['state'] == 'stable' ? '' : '-' . $cv['state']);
+    }
+
+    protected function fetchCurrentVersion()
+    {
+        $cv = $this->fetchCurrentVersionFromFile();
+        return trim($cv['version']);
+    }
+
+    protected function fetchCurrentLastUpdated()
+    {
+        $cv = $this->fetchCurrentVersionFromFile();
+        return $cv['last_update'];
+    }
+
+    protected function fetchCurrentProjectName()
+    {
+        $cv = $this->fetchCurrentVersionFromFile();
+        return $cv['project_name'];
+    }
+
+    protected function fetchCurrentState()
+    {
+        $cv = $this->fetchCurrentVersionFromFile();
+        return $cv['state'];
+    }
+
+    /**
+     * Methods for ANSI inline coloring starts here
+     *
+     * DO NOT move this method in the structure without reason.
+     *
+     * @return string Formatted filename:number + phpdoc
+     * @throws ReflectionException
+     * @internal This method returns the filename and line number where group of specific methods starts
+     */
+    private function ____ansiMethods(): string
+    {
+        return self::describeMethodItself();
+    }
+
+    function ansiRed($orTick = false)
+    {
+        return $this->ansiColor($orTick, "\e[1;31m");
+    }
+
+    function ansiGreen($orTick = false)
+    {
+        return $this->ansiColor($orTick, "\e[1;32m");
+    }
+
+
+    function ansiBlue($orTick = false)
+    {
+        return $this->ansiColor($orTick, "\e[1;34m");
+    }
+
+    function ansiCyan($orTick = false)
+    {
+        return $this->ansiColor($orTick, "\e[1;36m");
+    }
+
+    function ansiWhite($orTick = false)
+    {
+        return $this->ansiColor($orTick, "\e[1;37m");
+    }
+
+    function ansiEnd($orTick = false)
+    {
+        return $this->ansiColor($orTick, "\e[0m");
+    }
+
+    protected function ansiColor($orTick = false, $color = null)
+    {
+
+        if ($orTick && ($this->isMarkdownOutput || !$this->isColorsEnabled)) {
+            return '`';
+        } elseif (!$orTick && $this->isMarkdownOutput) {
+            return '';
+        } elseif ($this->isColorsEnabled) {
+            return $color;
+        }
+        return '';
+    }
+
+    /**
+     * Additional methods for different taska starts here
+     *
+     * DO NOT move this method in the structure without reason.
+     *
+     * @return string Formatted filename:number + phpdoc
+     * @throws ReflectionException
+     * @internal This method returns the filename and line number where group of specific methods starts
+     */
+    private function ____additionalOfDifferentPurposes(): string
+    {
+        return self::describeMethodItself();
+    }
+
+    /**
+     * @return string
+     */
+    protected function checkCurrentEnv(): string
+    {
+        return (php_sapi_name() == 'cli') ? 'cli' : 'web';
+    }
+
+    private function getOptValue(array $options, string $short = null, string $long = null)
+    {
+        if (!is_null($short) && array_key_exists($short, $options)) {
+            return $options[$short];
+        } elseif (!is_null($long) && array_key_exists($long, $options)) {
+            return $options[$long];
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * {@see getopt()} for short, long and mixed options, see phpdoc for params
+     *
+     * ```php
+     * $parameters = [
+     *    'short' => [
+     *      'a',
+     *      'b:',
+     *      'c::'
+     *    ],
+     *    'mixed' => [
+     *      'h'   => 'help',
+     *      'i:'  => 'india:',
+     *      'j::' => 'julia::',
+     *    ],
+     *    'long' => [
+     *      'xrey',
+     *      'yankee:',
+     *      'zulu::',
+     *    ]
+     * ];
+     *
+     * $options = getOptions($parameters);
+     *
+     * // debug:
+     *
+     * print_r(getOptions($parameters, true));
+     * ```
+     *
+     * @param array $parameters An associative array with optional keys `short`, `mixed`, `long`, see above sample array
+     * @param bool  $returnParams If true array of params will be returned without executing {@link getopt()}, just for debug
+     *
+     *
+     *
+     * @return false|false[]|string[]
+     */
+    function getOptions(array $parameters, $returnParams = false)
+    {
+        $shortStr = '';
+        $longArr = [];
+        $allParams = [];
+        if (array_key_exists('short', $parameters)) {
+            $shortStr .= implode('', $parameters['short']);
+            $allParams = $parameters['short'];
+        }
+        if (array_key_exists('mixed', $parameters)) {
+            $arrayValues = array_values($parameters['mixed']);
+            $arrayKeys = array_keys($parameters['mixed']);
+            $shortStr .= implode('', $arrayKeys);
+            $longArr = $arrayValues;
+            $allParams = array_merge($allParams, $arrayKeys, $arrayValues);
+        }
+        if (array_key_exists('long', $parameters)) {
+            $longArr = array_merge($longArr, array_values($parameters['long']));
+            $allParams = array_merge($allParams, array_values($parameters['long']));
+        }
+        if ($returnParams) {
+            return $allParams;
+        }
+
+        return getopt($shortStr, $longArr);
+    }
+
+
+    /**
+     * TODO improve phpdoc
+     *
+     * @param string $methodName Method which should be described, if null backtrace is used to find calling methodname
+     *
+     * @return string
+     * @throws ReflectionException
+     * @internal Used for debug only
+     */
+    private function describeMethodItself($methodName = null)
+    {
+        if (is_null($methodName)) {
+            $methodName = debug_backtrace()[1]['function'];
+        }
+        $method = new \ReflectionMethod(SemanticVersion::class, $methodName);
+        $file = $method->getFileName();
+        $line = $method->getStartLine();
+        $phpdoc = $method->getDocComment();
+        $displayName = str_replace('____', '', $methodName);
+
+
+        return sprintf("`%s` starts at `%s:%d`\n\nphpdoc:\n\n     %s", $displayName, $file, $line, $phpdoc);
+    }
+}
+
+
+/**
+ * Class SemanticVersionUtility
+ */
+class SemanticVersionUtility
+{
 
     /**
      * Returns string's length
@@ -560,6 +915,16 @@ To revert this change please run: \e[0;32m%s\e[0m
             $variable = self::removeAnsi($variable);
         }
         return mb_strlen($variable);
+    }
+
+    public static function linkOrHighlight($value, $forMd = false)
+    {
+        if ($forMd) {
+            return "{$value}";
+        } else {
+//            return "{$this->ansiGreen()}{$value}{$this->ansiEnd()}";
+//            return "{$this->ansiGreen()}{$value}{$this->ansiEnd()}";
+        }
     }
 
     public static function startsWith($haystack, $needle)
@@ -602,6 +967,11 @@ To revert this change please run: \e[0;32m%s\e[0m
         }
     }
 
+    public static function prepend($value, $minLen, $withChar = ' '): string
+    {
+        return str_repeat($withChar, $minLen) . $value;
+    }
+
     /**
      * Fill to right
      *
@@ -622,125 +992,177 @@ To revert this change please run: \e[0;32m%s\e[0m
         }
     }
 
-
-    public static function removeAnsi($value)
-    {
-        return preg_replace('#\\e[[][^A-Za-z]*[A-Za-z]#', '', $value);
-    }
-
-
     public static function removeColon(string $value): string
     {
         return str_replace(':', '', $value);
     }
 
-
-    /**
-     * Methods for getting current version data starts here
-     *
-     * DO NOT move this method in the structure without reason.
-     *
-     * @return string Formatted filename:number + phpdoc
-     * @throws ReflectionException
-     * @internal This method returns the filename and line number where group of specific methods starts
-     */
-    private function ____methodsForGettingCurrentVersion(): string
+    public static function removeAnsi($value)
     {
-        return self::describeMethodItself();
-    }
-
-    /**
-     * @param bool $shyData
-     *
-     * @return array
-     */
-    protected function getCurrentVersionFromFile($shyData = false): array
-    {
-        if (!file_exists($this->currentVersionFile)) {
-            if ($shyData) die('No data about current version or data are invalid');
-            die(sprintf("there is no `%s` file, please create it with \e[36mphp {$this->selfName} --init\e[0m command", $this->currentVersionFile) . EOLx2);
-        }
-        $currentData = json_decode(file_get_contents($this->currentVersionFile), true);
-        if (is_null($currentData)) {
-            if ($shyData) die('No data about current version or data are invalid');
-            die(sprintf("\e[31mInvalid data in `%s` file.\e[0m\n\nPlease fix it or remove the file and initialize your version again with: \e[32mphp {$this->selfName} --init\e[0m", $this->currentVersionFile) . EOLx2);
-        };
-        return $currentData;
-    }
-
-    protected function getCurrentVersionToString()
-    {
-        $cv = $this->getCurrentVersionFromFile();
-        return $cv['version'] . ($cv['state'] == 'stable' ? '' : '-' . $cv['state']);
-    }
-
-    protected function getCurrentVersion()
-    {
-        $cv = $this->getCurrentVersionFromFile();
-        return trim($cv['version']);
-    }
-
-    protected function getCurrentLastUpdated()
-    {
-        $cv = $this->getCurrentVersionFromFile();
-        return $cv['last_update'];
-    }
-
-    protected function getCurrentProjectName()
-    {
-        $cv = $this->getCurrentVersionFromFile();
-        return $cv['project_name'];
-    }
-
-    protected function getCurrentState()
-    {
-        $cv = $this->getCurrentVersionFromFile();
-        return $cv['state'];
-    }
-
-    /**
-     * @return string
-     */
-    protected function getCurrentEnv(): string
-    {
-        return (php_sapi_name() == 'cli') ? 'cli' : 'web';
-    }
-
-    private function getOptValue(array $options, string $short = null, string $long = null)
-    {
-        if (!is_null($short) && array_key_exists($short, $options)) {
-            return $options[$short];
-        } elseif (!is_null($long) && array_key_exists($long, $options)) {
-            return $options[$long];
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * TODO improve phpdoc
-     *
-     * @param string $methodName Method which should be described, if null backtrace is used to find calling methodname
-     *
-     * @return string
-     * @throws ReflectionException
-     * @internal Used for debug only
-     */
-    private function describeMethodItself($methodName = null)
-    {
-        if (is_null($methodName)) {
-            $methodName = debug_backtrace()[1]['function'];
-        }
-        $method = new \ReflectionMethod(VersionUpdater::class, $methodName);
-        $file = $method->getFileName();
-        $line = $method->getStartLine();
-        $phpdoc = $method->getDocComment();
-        $displayName = str_replace('____', '', $methodName);
-
-
-        return sprintf("`%s` starts at `%s:%d`\n\nphpdoc:\n\n     %s", $displayName, $file, $line, $phpdoc);
+        return preg_replace('#\\e[[][^A-Za-z]*[A-Za-z]#', '', $value);
     }
 }
 
+class SemanticVersionHints
+{
+    protected $registered = [];
 
-$versionUpdater = new VersionUpdater();
+    protected $displayedLines = [];
+
+    protected $longestParam = 0;
+
+    protected $leftPaneSize = 0;
+
+
+    private function register($name)
+    {
+        if (in_array($name, $this->registered)) {
+            throw new Exception(sprintf('param with name `%s` is already registered!', $name), time());
+        } else {
+            $this->registered[] = $name;
+        }
+
+    }
+
+    public function render(bool $markdownOutput = false, bool $isColorEnabled = false)
+    {
+
+        $out = '';
+
+//        print_r($this->registered);
+//        print_r($this->displayedLines);
+        foreach ($this->displayedLines as $line) {
+            if ($line['kind'] == 'param') {
+                $param = $line['param'];
+                if ($line['is_first']) {
+                    if ($markdownOutput) {
+                        $out .= '```' . EOL;
+                    }
+                }
+                if (!$markdownOutput && $isColorEnabled) {
+                    $param = "\e[0;34m{$param}\e[0m";
+                }
+                $out .= SemanticVersionUtility::fillToLeft($param, $this->leftPaneSize);
+                $i = 0;
+
+                foreach ($line['data'] as $hint) {
+                    if ($i == 0) {
+                        $out .= $hint . EOL;
+                    } else {
+                        $out .= SemanticVersionUtility::prepend($hint, $this->leftPaneSize) . EOL;
+                    }
+                    $i++;
+                }
+
+                if ($line['is_last']) {
+                    if ($markdownOutput) {
+                        $out .= '```' . EOL;
+                    }
+                } else {
+                    $out .= EOL; // end-line after each param
+                }
+
+            } elseif ($line['kind'] == 'header') {
+
+                $i = 0;
+
+                $headerType = $line['param'];
+                foreach ($line['data'] as $hint) {
+                    if ($i == 0) {
+                        $hashes = '';
+                        if ($markdownOutput) {
+                            if (intval($headerType) > 0) {
+                                $hashes = str_repeat('#', $headerType) . ' ';
+                            }
+                            $hint = $hashes . $hint . '  ';
+                        }
+                        $out .= EOL . $hint . EOL;
+                    } else {
+                        if ($markdownOutput) {
+                            $hint = $hint . '  ';
+                        }
+
+                        $out .= $hint . EOL;
+
+                    }
+                    $i++;
+                }
+                $out .= EOL;
+            }
+        }
+
+        echo $out;
+    }
+
+
+    private function addDisplayLine($kind, $param, $data, $isFirst = false, $isLast = false)
+    {
+        $this->displayedLines[] = ['kind' => $kind, 'param' => $param, 'data' => $data, 'is_first' => $isFirst, 'is_last' => $isLast];
+    }
+
+    public function addFirstParam($short, $long, array $hint)
+    {
+        return $this->addNextParam($short, $long, $hint, true, false);
+    }
+
+    public function addLastParam($short, $long, array $hint)
+    {
+        return $this->addNextParam($short, $long, $hint, false, true);
+    }
+
+    public function addOnlyParam($short, $long, array $hint)
+    {
+        return $this->addNextParam($short, $long, $hint, true, true);
+    }
+
+    public function addNextParam($short, $long, array $hint, $firstInGroup = false, $lastInGroup = false): SemanticVersionHints
+    {
+        $parts = [];
+        if (!is_null($short)) {
+            $this->register($short);
+            $parts[] = '-' . self::removeColon($short);
+        }
+        if (!is_null($long)) {
+            $this->register($long);
+            $parts[] = '--' . self::removeColon($long);
+        }
+
+        $uniqueKey = implode(', ', $parts);
+        $this->addDisplayLine('param', $uniqueKey, $hint, $firstInGroup, $lastInGroup);
+
+        $stringLength = SemanticVersionUtility::stringLength($uniqueKey);
+        if ($stringLength > $this->longestParam) {
+            $this->longestParam = $stringLength;
+            $this->leftPaneSize = $stringLength + 2;
+        }
+
+
+        return $this;
+    }
+
+
+    public function addHeader(array $header, int $level = 3): SemanticVersionHints
+    {
+        $this->addDisplayLine('header', $level, $header);
+        return $this;
+    }
+
+    public function startGroup($uniqueGroupId): SemanticVersionHints
+    {
+        $this->addDisplayLine('group-start', null, $uniqueGroupId);
+        return $this;
+    }
+
+    public function endGroup($uniqueGroupId): SemanticVersionHints
+    {
+        $this->addDisplayLine('group-end', null, $uniqueGroupId);
+        return $this;
+    }
+
+    public static function removeColon(string $value): string
+    {
+        return str_replace(':', '', $value);
+    }
+}
+
+$versionUpdater = new SemanticVersion();
