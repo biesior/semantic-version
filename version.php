@@ -1,10 +1,15 @@
 <?php
 declare(strict_types=1);
 
-
 const EOL = PHP_EOL;
 const EOLx2 = EOL . EOL;
 const EOLx3 = EOL . EOL . EOL;
+
+/**
+ * Class SemanticVersion
+ *
+ * @author (c) 2020 Marcus Biesioroff <biesior@gmail.com>
+ */
 class SemanticVersion
 {
 
@@ -29,14 +34,11 @@ class SemanticVersion
 
 
     /**
-     * VersionUpdater constructor.
+     * SemanticVersion constructor.
      */
     public function __construct()
     {
-//        $foo = 'x';
-//        echo "foo bar {$foo} baz {$this->ansiRed()} endiii" . self::COLOR . $this->ansiEnd();
-//
-//        die();
+
         $env = $this->checkCurrentEnv();
         if ($env == 'web' && count($_GET) == 0 && count($_POST) == 0) {
             if (!$this->isVersionDisplayOnWebAllowed) {
@@ -98,7 +100,7 @@ class SemanticVersion
 
         if (isset($options['c']) || isset($options['clean'])) {
             system('clear;');
-            echo ("\e[2;36m^--- For previous output scroll up {$this->ansiEnd()}") . EOLx2;
+            echo ("\e[2;36m^--- For previous output scroll up {$this->escape()}") . EOLx2;
         }
 
         $this->dispatcher();
@@ -109,7 +111,7 @@ class SemanticVersion
      *
      * DO NOT move this method in the structure without reason.
      *
-     * @return string Formatted filename:number + phpdoc
+     * @return string Formatted filename:number + phpdoc (if any)
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
@@ -120,136 +122,6 @@ class SemanticVersion
 
     private function dispatcher()
     {
-
-
-        $hintsObj = new SemanticVersionHints();
-
-        $hintsObj->addHeader(['Welcome to semantic-version!'], 1);
-
-//        This CLI sets or updates version according to schema and updates required files
-//
-//Please refer to these resources for more details
-//- [1;32mhttps://semver.org/spec/v2.0.0.html[0m
-//- [1;32mhttps://semver.org/spec/v2.0.0.html[0m
-
-        $hintsObj->addHeader([
-            'This CLI stript sets or updates version according to schema and updates required files',
-            'for more details please refer to these resources:',
-            '- https://semver.org/spec/v2.0.0.html',
-            '- https://en.wikipedia.org/wiki/Software_release_life_cycle',
-        ], 2);
-
-        $hintsObj
-            ->addHeader(['Help'])
-            ->addHeader(['Parameters'], 4)
-            ->addOnlyParam('h', 'help', ['Displaying this help']);
-
-
-        $hintsObj
-            ->addHeader(["Display options"], 3)
-            ->addHeader([
-                "Sample usages",
-                "- {$this->ansiGreen(true)}php {$this->selfName} -xc ...other params{$this->ansiEnd(true)} to display with clean output without colors",
-                "- {$this->ansiGreen(true)}php {$this->selfName} -hxc{$this->ansiEnd(true)} to displays monochromatic help with clean output.",
-                "- {$this->ansiGreen(true)}php {$this->selfName} -h --markdown > HELP.md{$this->ansiEnd(true)} to display this help as a markdown and ie save it to file.",
-                "- etc"
-            ], 4)
-            ->addHeader(['Parameters'], 4)
-            ->addFirstParam('c', 'clean', ['If set console will be cleaned for better output'])
-            ->addNextParam('x', null, [
-                    "Extract colors, i.e. if you want to write the output to file like ",
-                    "{$this->ansiGreen(true)}php {$this->selfName} -h > version-help-color.txt{$this->ansiEnd(true)}",
-                    "{$this->ansiGreen(true)}php {$this->selfName} -hx > version-help-mono.txt{$this->ansiEnd(true)}"
-                ]
-            )
-            ->addNextParam(null, 'markdown', [
-                'If set help will be generated in markdown format, i.e.',
-                "{$this->ansiGreen(true)}php {$this->selfName} -h --markdown > HELP.md{$this->ansiEnd(true)}",
-            ])
-            ->addLastParam(null, 'debug', [
-                'If set some debug will occure, of course it\'s only for development stage',
-            ]);
-
-
-        $hintsObj
-            ->addHeader(["Init, set, update or kill"])
-            ->addHeader(['Parameters'], 4)
-            ->addFirstParam('i:', 'init:', [
-                    'Create new version by default it will be `0.0.1-alpha`',
-                    '- you can change it immediately using -m `set` or `update`'
-                ]
-            )
-            ->addNextParam(null, 'repository:', ["Repository URL ie {$this->ansiGreen(true)}https://github.com/biesior/version-updater/{$this->ansiEnd(true)}"])
-            ->addNextParam('m:', 'mode:', [
-                    'Mode can be `set` or `update` ',
-                    '- When mode is `set` params `-n` or `--new-version` and `-s` or `--state` are required ',
-                    '- When mode is `update` param `-p, --part` is required'
-                ]
-            )
-            ->addNextParam('n:', 'new-version', ['Version which should be set like 1.2.3'])
-            ->addNextParam('s:', 'state:', ['State which should be set like alpha, beta , stable'])
-            ->addNextParam('p:', 'part:', ['Part to update allowed `major`, `minor`, `patch`'])
-            ->addNextParam('v', 'version', ['Displays current version of the project'])
-            ->addLastParam(null, 'kill::', ["({$this->ansiRed()}destructive!{$this->ansiEnd()}) Deletes version file, you will need to start from beginning"])//            ->endGroup($group)
-        ;
-
-
-        $hintsObj
-            ->addHeader([
-                'Rise params',
-                'You can just upgrade existing project with PATCH, MINOR or MAJOR version like'
-            ])
-            ->addHeader(['Parameters'], 4)
-            ->addFirstParam(null, 'patch', ["Increases PATCH version i.e.: {$this->ansiGreen(true)}0.1.0-alpha{$this->ansiEnd(true)} > {$this->ansiGreen(true)}0.1.1-alpha{$this->ansiEnd(true)}"])
-            ->addNextParam(null, 'minor', ["Increases MINOR version i.e.: {$this->ansiGreen(true)}0.1.1-alpha{$this->ansiEnd(true)} > {$this->ansiGreen(true)}0.2.0-alpha{$this->ansiEnd(true)}"])
-            ->addNextParam(null, 'major', ["Increases MINOR version i.e.: {$this->ansiGreen(true)}0.2.0-alpha{$this->ansiEnd(true)} > {$this->ansiGreen(true)}1.0.0-alpha{$this->ansiEnd(true)}"])
-            ->addLastParam(null, 'set:', [
-                "Requires one or two following params version and state",
-                "- first is version like {$this->ansiGreen(true)}1.2.3{$this->ansiEnd(true)}",
-                "- second is version like {$this->ansiGreen(true)}alpha{$this->ansiEnd(true)}"
-            ]);
-
-//        $markDownBlock = ['raw_code' => true, 'markdown' => '```'];
-//        $hints = [
-////            'group-0-start' => $markDownBlock,
-////            'h'             => ['short' => 'h', 'long' => 'help', 'hint' => 'Displaying this help'],
-////            'group-0-end'   => $markDownBlock,
-////
-////            'hint-group-1' => ['header' => "These should be placed at the beginning, i.e.: || - {$this->ansiGreen(true)}php {$this->selfName} -xc ...other params{$this->ansiEnd(true)} to display with clean output without colors || - {$this->ansiGreen(true)}php {$this->selfName} -hxc{$this->ansiEnd(true)} to displays monochromatic help with clean output || - etc."],
-////
-////            'group-1-start' => $markDownBlock,
-////            'c'             => ['short' => 'c', 'long' => 'clean', 'hint' => 'If set console will be cleaned for better output'],
-////            'x'             => ['short' => 'x', 'hint' => "Extract colors, i.e. if you want to write the output to file like || {$this->ansiGreen(true)}php {$this->selfName} -h > version-help-color.txt{$this->ansiEnd(true)} || {$this->ansiGreen(true)}php {$this->selfName} -hx > version-help-mono.txt{$this->ansiEnd(true)}"],
-////            'group-1-end'   => $markDownBlock,
-//
-////            'hint-group-2' => ['header' => "Init, set, update or kill"],
-//
-////            'group-2-start' => $markDownBlock,
-////            'i:'            => ['short' => 'i', 'long' => 'init', 'hint' => 'Create new version by default it will be `0.0.1-alpha` || - you can change it immediately using -m `set` or `update`'],
-////            'repository:'   => ['long' => 'repository', 'hint' => "Repository URL ie {$this->ansiGreen()}https://github.com/biesior/version-updater/{$this->ansiEnd()}"],
-////            'm:'            => ['short' => 'm', 'long' => 'mode', 'hint' => 'Mode can be `set` or `update` || - When mode is `set` params `-n` or `--new-version` and `-s` or `--state` are required || - When mode is `update` param `-p, --part` is required'],
-////            'n:'            => ['short' => 'n', 'long' => 'new-version', 'hint' => 'Version which should be set like 1.2.3'],
-////            's:'            => ['short' => 's', 'long' => 'state', 'hint' => 'State which should be set like alpha, beta , stable'],
-////            'p:'            => ['short' => 'p', 'long' => 'part', 'hint' => 'Part to update allowed `major`, `minor`, `patch`'],
-////            'v:'            => ['short' => 'v', 'long' => 'version', 'hint' => 'Displays current version of the project'],
-////            'kill::'        => ['long' => 'kill', 'hint' => "({$this->ansiRed()}destructive!{$this->ansiEnd()}) Deletes version file, you will need to start from beginning"],
-////            'group-2-end'   => $markDownBlock,
-//
-////            'hint-group-3' => ['header' => "Rise params ||||You can just upgrade existing project with PATCH, MINOR or MAJOR version like || "],
-//
-////            'group-3-start' => $markDownBlock,
-////            'patch'         => ['long' => 'patch', 'hint' => "Increases PATCH version i.e.: {$this->ansiGreen()}0.1.0-alpha{$this->ansiEnd()} > {$this->ansiGreen()}0.1.1-alpha{$this->ansiEnd()}"],
-////            'minor'         => ['long' => 'minor', 'hint' => "Increases MINOR version i.e.: {$this->ansiGreen()}0.1.1-alpha{$this->ansiEnd()} > {$this->ansiGreen()}0.2.0-alpha{$this->ansiEnd()}"],
-////            'major'         => ['long' => 'major', 'hint' => "Increases MINOR version i.e.: {$this->ansiGreen()}0.2.0-alpha{$this->ansiEnd()} > {$this->ansiGreen()}1.0.0-alpha{$this->ansiEnd()}"],
-////            'set:'          => ['long' => 'set', 'hint' => "requires one or two following params version and state"],
-////            'group-3-end'   => $markDownBlock,
-//
-//
-////            'debug'         => ['long' => 'debug', 'hint' => 'If used looo...ot of debug may be displayed, use only for development'],
-//
-//        ];
-//        $hintsObj->render();
-//        die('temp die' . EOLx2);
 
 
         $parameters = [
@@ -317,7 +189,7 @@ class SemanticVersion
         }
 
         if (!is_null($help)) {
-            $this->showHelp($hintsObj);
+            $this->showHelp();
         } elseif (!is_null($init)) {
             $this->init($init, $tree);
         } elseif (!is_null($kill)) {
@@ -331,31 +203,155 @@ class SemanticVersion
         } elseif (!is_null($mode)) {
             if ($mode == 'set') {
                 if (is_null($newVersion) || is_null($state)) {
-                    die("{$this->ansiRed()}If `mode` is `set`, params `-n` or `--new-version` and `-s` or `--state` are required. Bye!{$this->ansiEnd()}" . EOLx2);
+                    die("{$this->red()}If `mode` is `set`, params `-n` or `--new-version` and `-s` or `--state` are required. Bye!{$this->escape()}" . EOLx2);
                 }
                 $version = $options['n'];
                 $state = $options['s'];
                 $this->set($version, $state);
             } elseif ($mode = 'update') {
                 if (is_null($part)) {
-                    die("{$this->ansiRed()}If `mode` is `update`, param`-p` or `--part` is required. Bye!{$this->ansiEnd()}" . EOLx2);
+                    die("{$this->red()}If `mode` is `update`, param`-p` or `--part` is required. Bye!{$this->escape()}" . EOLx2);
                 }
                 echo 'Make update';
             } else {
-                die(sprintf("{$this->ansiRed()}Mode %s is not supported, check the help with -h parameter. Bye!{$this->ansiEnd()}", $options['m']) . EOLx2);
+                die(sprintf("{$this->red()}Mode %s is not supported, check the help with -h parameter. Bye!{$this->escape()}", $options['m']) . EOLx2);
             }
         } else {
-            $out = EOL . $this->title . "{$this->ansiRed()}Invalid parameters, check the help with -h parameter, like:\n\n{$this->ansiGreen()}php {$this->selfName} -h{$this->ansiEnd()} \n\nBye!{$this->ansiEnd()}" . EOLx2;
+            $out = EOL . $this->title . "{$this->red()}Invalid parameters, check the help with -h parameter, like:\n\n{$this->green()}php {$this->selfName} -h{$this->escape()} \n\nBye!{$this->escape()}" . EOLx2;
             if (!$this->isColorsEnabled) $out = SemanticVersionUtility::removeAnsi($out);
             die($out);
         }
 
     }
 
-    private function showHelp(SemanticVersionHints $hintObj)
+    /**
+     * Generates and displays the help
+     *
+     * @throws Exception
+     */
+    private function showHelp()
     {
 
-        $hintObj->render($this->isMarkdownOutput, $this->isColorsEnabled);
+        $now = new DateTime('now');
+        $lastUpdate = $now->format('Y-m-d H:i:s');
+        $help = new SemanticVersionHelp();
+
+        $help->addHeader([
+            'Welcome to semantic-version!',
+            'Author (c) 2020 Marcus Biesioroff biesior@gmail.com',
+            'Newest version can be found at https://github.com/biesior/semantic-version',
+            sprintf("Last update for this help at `%s`", $lastUpdate),
+
+        ], 1);
+
+        $help->addHeader([
+            "What it does?",
+            'This CLI stript sets or updates version according to schema and updates required files.',
+            "\n\nIt is still in development phase and lot of features should be implemented or improved.",
+            "If you have any suggestion or problems visit {$this->green()}https://github.com/biesior/semantic-version/issues{$this->escape()}",
+            "Please use it with care!\n\n",
+            'For more details please refer to these resources:',
+            '- https://semver.org/spec/v2.0.0.html',
+            '- https://en.wikipedia.org/wiki/Software_release_life_cycle',
+        ], 3);
+
+        $help
+            ->addHeader(['Help'])
+            ->addHeader(['Parameters'], 4)
+            ->addOnlyParam('h', 'help', ['Displaying this help']);
+
+
+        $help
+            ->addHeader(["Display options"], 3)
+            ->addHeader([
+                "Sample usages",
+                "- {$this->green(true)}php {$this->selfName} -xc ...other params{$this->escape(true)} to display with clean output without colors",
+                "- {$this->green(true)}php {$this->selfName} -hxc{$this->escape(true)} to displays monochromatic help with clean output.",
+                "- {$this->green(true)}php {$this->selfName} -h --markdown > HELP.md{$this->escape(true)} to display this help as a markdown and ie save it to file.",
+                "- etc"
+            ], 4)
+            ->addHeader(['Parameters'], 4)
+            ->addFirstParam('c', 'clean', ['If set console will be cleaned for better output'])
+            ->addNextParam('x', null, [
+                    "Extract colors, i.e. if you want to write the output to file like ",
+                    "{$this->green(true)}php {$this->selfName} -h > version-help-color.txt{$this->escape(true)}",
+                    "{$this->green(true)}php {$this->selfName} -hx > version-help-mono.txt{$this->escape(true)}"
+                ]
+            )
+            ->addNextParam(null, 'markdown', [
+                'If set help will be generated in markdown format, i.e.',
+                "{$this->green(true)}php {$this->selfName} -h --markdown > HELP.md{$this->escape(true)}",
+            ])
+            ->addLastParam(null, 'debug', [
+                'If set some debug will occure, of course it\'s only for development stage',
+            ]);
+
+
+        $help
+            ->addHeader(["Init, set, update or kill"])
+            ->addHeader(['Parameters'], 4)
+            ->addFirstParam('i:', 'init:', [
+                    'Create new version by default it will be `0.0.1-alpha`',
+                    '- you can change it immediately using -m `set` or `update`'
+                ]
+            )
+            ->addNextParam(null, 'repository:', ["Repository URL ie {$this->green(true)}https://github.com/biesior/version-updater/{$this->escape(true)}"])
+            ->addNextParam('m:', 'mode:', [
+                    'Mode can be `set` or `update` ',
+                    '- When mode is `set` params `-n` or `--new-version` and `-s` or `--state` are required ',
+                    '- When mode is `update` param `-p, --part` is required'
+                ]
+            )
+            ->addNextParam('n:', 'new-version', ['Version which should be set like 1.2.3'])
+            ->addNextParam('s:', 'state:', ['State which should be set like alpha, beta , stable'])
+            ->addNextParam('p:', 'part:', ['Part to update allowed `major`, `minor`, `patch`'])
+            ->addNextParam('v', 'version', ['Displays current version of the project'])
+            ->addLastParam(null, 'kill::', ["({$this->red()}destructive!{$this->escape()}) Deletes version file, you will need to start from beginning"])//            ->endGroup($group)
+        ;
+
+
+        $help
+            ->addHeader([
+                'Rise params',
+                'You can just upgrade existing project with PATCH, MINOR or MAJOR version like'
+            ])
+            ->addHeader(['Parameters'], 4)
+            ->addFirstParam(null, 'patch', ["Increases PATCH version i.e.: {$this->green(true)}0.1.0-alpha{$this->escape(true)} > {$this->green(true)}0.1.1-alpha{$this->escape(true)}"])
+            ->addNextParam(null, 'minor', ["Increases MINOR version i.e.: {$this->green(true)}0.1.1-alpha{$this->escape(true)} > {$this->green(true)}0.2.0-alpha{$this->escape(true)}"])
+            ->addNextParam(null, 'major', ["Increases MINOR version i.e.: {$this->green(true)}0.2.0-alpha{$this->escape(true)} > {$this->green(true)}1.0.0-alpha{$this->escape(true)}"])
+            ->addLastParam(null, 'set:', [
+                "Requires one or two following params version and state",
+                "- first is version like {$this->green(true)}1.2.3{$this->escape(true)}",
+                "- second is version like {$this->green(true)}alpha{$this->escape(true)}"
+            ]);
+
+        $help
+            ->addHeader([
+                'Commands',
+                'Some functionalities are available by commands instead of parameters',
+                'That means you should use them as',
+                '',
+                "{$this->green(true)}php {$this->selfName} <command>{$this->escape(true)}",
+                '',
+                'i.e. to rise the PATCH version just use that command:',
+                '',
+                "{$this->green(true)}php {$this->selfName} patch{$this->escape(true)}",
+            ])
+            ->addHeader(['Available commands'], 4)
+            ->addCommand(null, 'patch', ['foo'])
+            ->addCommand(null, 'patch', ['foo']);
+//            ->addHeader(['Commands'], 4)
+//            ->addFirstParam(null, 'patch', ["Increases PATCH version i.e.: {$this->green(true)}0.1.0-alpha{$this->escape(true)} > {$this->green(true)}0.1.1-alpha{$this->escape(true)}"])
+//            ->addNextParam(null, 'minor', ["Increases MINOR version i.e.: {$this->green(true)}0.1.1-alpha{$this->escape(true)} > {$this->green(true)}0.2.0-alpha{$this->escape(true)}"])
+//            ->addNextParam(null, 'major', ["Increases MINOR version i.e.: {$this->green(true)}0.2.0-alpha{$this->escape(true)} > {$this->green(true)}1.0.0-alpha{$this->escape(true)}"])
+//            ->addLastParam(null, 'set:', [
+//                "Requires one or two following params version and state",
+//                "- first is version like {$this->green(true)}1.2.3{$this->escape(true)}",
+//                "- second is version like {$this->green(true)}alpha{$this->escape(true)}"
+//            ]);
+
+
+        $help->render($this->isMarkdownOutput, $this->isColorsEnabled);
 
     }
 
@@ -370,10 +366,10 @@ class SemanticVersion
             $lastUpdated = $this->fetchCurrentLastUpdated();
 
             die (sprintf(
-                    "File {$this->ansiGreen()}%s{$this->ansiEnd()} already exists. 
-            \nCurrent version of {$this->ansiGreen()}%s{$this->ansiEnd()} project is {$this->ansiGreen()}%s{$this->ansiEnd()} last updated at {$this->ansiGreen()}%s{$this->ansiEnd()} 
+                    "File {$this->green()}%s{$this->escape()} already exists. 
+            \nCurrent version of {$this->green()}%s{$this->escape()} project is {$this->green()}%s{$this->escape()} last updated at {$this->green()}%s{$this->escape()} 
             \nIf you want to re-initialize the project's version remove this file first.
-            \nInstead maybe you want update current version with --mode `set` or `update`.\nCheck the help for more details with command: {$this->ansiGreen()}php {$this->selfName} --help{$this->ansiEnd()}
+            \nInstead maybe you want update current version with --mode `set` or `update`.\nCheck the help for more details with command: {$this->green()}php {$this->selfName} --help{$this->escape()}
              ",
                     $this->currentVersionFile,
                     $projectName,
@@ -388,7 +384,7 @@ class SemanticVersion
         $lastUpdateLink = $now2->format('Y-m-d+H:i:s');
 
         $vers = [
-            'project_name' => $projectName, 'version' => '0.0.1', 'state' => 'alpha', 'last_update' => $lastUpdate,
+            'project_name' => $projectName, 'version' => '0.1.0', 'state' => 'alpha', 'last_update' => $lastUpdate,
         ];
 
         if (!is_null($tree)) {
@@ -399,13 +395,13 @@ class SemanticVersion
         if (!file_exists('README.md')) {
             $fileTemplate = "## `{$projectName}` project
 
-[![State](https://img.shields.io/static/v1?label=beta&message=1.0.0&color=blue)](https://github.com/biesior/box-drawer/tree/1.0.0-beta) <!-- __SEMANTIC_VERSION_LINE__ -->
-![Updated](https://img.shields.io/static/v1?label=upated&message={$lastUpdateLink}&color=lightgray) <!-- __SEMANTIC_UPDATED_LINE__ -->";
+[![State](https://img.shields.io/static/v1?label=alpha&message=0.1.0&color=blue)](https://github.com/biesior/box-drawer/tree/1.0.0-beta  'Latest known version') <!-- __SEMANTIC_VERSION_LINE__ -->
+![Updated](https://img.shields.io/static/v1?label=upated&message={$lastUpdateLink}&color=lightgray  'Latest known update date') <!-- __SEMANTIC_UPDATED_LINE__ -->";
 
             file_put_contents('README.md', $fileTemplate);
 
         }
-        echo "Versioning for project {$this->ansiGreen()}{$projectName}{$this->ansiEnd()} was initialized with version {$this->ansiGreen()}0.0.1-alpha{$this->ansiEnd()}!" . EOLx2;
+        echo "Versioning for project {$this->green()}{$projectName}{$this->escape()} was initialized with version {$this->green()}0.1.0-alpha{$this->escape()}!" . EOLx2;
     }
 
     private function kill($force = false)
@@ -416,7 +412,7 @@ class SemanticVersion
             $projectName = $this->fetchCurrentProjectName();
             $currentVersionLong = $this->fetchCurrentVersionToString();
         } else {
-            $out = "File {$this->ansiGreen()}{$this->currentVersionFile}{$this->ansiEnd()} doesn't exist, nothing to kill.\n\nBye!" . EOLx2;
+            $out = "File {$this->green()}{$this->currentVersionFile}{$this->escape()} doesn't exist, nothing to kill.\n\nBye!" . EOLx2;
             if (!$this->isColorsEnabled) {
                 $out = SemanticVersionUtility::removeAnsi($out);
             }
@@ -425,8 +421,8 @@ class SemanticVersion
         $renameTo = 'zzz_unused_' . time() . '_' . $this->currentVersionFile;
         if (!in_array($force, ['soft', 'hard'])) {
             $out .= 'You are trying to remove ' . $this->currentVersionFile . ' from your project and disable this functionality in it' . EOLx2;
-            $out .= "Of course it's your choice and if you are sure repeat this command with {$this->ansiGreen()}force{$this->ansiEnd()} value, like" . EOLx2;
-            $out .= "{$this->ansiGreen()}php {$this->selfName} --kill=soft{$this->ansiEnd()} \n\n    to rename `{$this->currentVersionFile}` to `{$renameTo}` or \n\n{$this->ansiGreen()}php {$this->selfName} --kill=hard{$this->ansiEnd()} \n\n    to remove it totally";
+            $out .= "Of course it's your choice and if you are sure repeat this command with {$this->green()}force{$this->escape()} value, like" . EOLx2;
+            $out .= "{$this->green()}php {$this->selfName} --kill=soft{$this->escape()} \n\n    to rename `{$this->currentVersionFile}` to `{$renameTo}` or \n\n{$this->green()}php {$this->selfName} --kill=hard{$this->escape()} \n\n    to remove it totally";
             if (!$this->isColorsEnabled) {
                 $out = SemanticVersionUtility::removeAnsi($out);
             }
@@ -441,14 +437,14 @@ class SemanticVersion
             $currentState = $this->fetchCurrentState();
         }
 
-        $out .= "Versioning for project {$this->ansiGreen()}{$projectName}{$this->ansiEnd()} was killed, last known version was {$this->ansiGreen()}{$currentVersionLong}{$this->ansiEnd()}" . EOLx2;
+        $out .= "Versioning for project {$this->green()}{$projectName}{$this->escape()} was killed, last known version was {$this->green()}{$currentVersionLong}{$this->escape()}" . EOLx2;
 
         if ($force == 'soft') {
             rename($this->currentVersionFile, $renameTo);
-            $out .= "File {$this->ansiGreen()}{$this->currentVersionFile}{$this->ansiEnd()} was renamed to {$this->ansiGreen()}{$renameTo}{$this->ansiEnd()}";
+            $out .= "File {$this->green()}{$this->currentVersionFile}{$this->escape()} was renamed to {$this->green()}{$renameTo}{$this->escape()}";
         } elseif ($force == 'hard') {
             unlink($this->currentVersionFile);
-            $out .= "File {$this->ansiGreen()}{$this->currentVersionFile}{$this->ansiEnd()} was {$this->ansiRed()}deleted{$this->ansiEnd()}";
+            $out .= "File {$this->green()}{$this->currentVersionFile}{$this->escape()} was {$this->red()}deleted{$this->escape()}";
         }
         $out .= EOLx2;
 
@@ -460,15 +456,16 @@ class SemanticVersion
 
         $out .= "The functionality is disabled now." . EOL;
         if ($force == 'soft') {
-            $out .= "\nYou can manually restore it by renaming the backup file to {$this->ansiGreen()}{$this->currentVersionFile}{$this->ansiEnd()}." . EOL;
+            $out .= "\nor just by manually restore it by renaming the backup file to {$this->green()}{$this->currentVersionFile}{$this->escape()}." . EOL;
+            $out .= "\nor just by manually restore it by renaming the backup file to {$this->green()}{$this->currentVersionFile}{$this->escape()}." . EOLx3;
         }
         $out .= "To recreate it with last known version, initialize it again and set last known version and state like:" . EOLx2;
 
-        $out .= "{$this->ansiGreen()}php {$this->selfName} -i=\"{$projectName}\"{$this->ansiEnd()}" . EOL;
-        $out .= "{$this->ansiGreen()}php {$this->selfName} -m set -n {$currentVersionShort} -s {$currentState}{$this->ansiEnd()}" . EOL;
+        $out .= "{$this->green()}php {$this->selfName} -i=\"{$projectName}\"{$this->escape()}" . EOL;
+        $out .= "{$this->green()}php {$this->selfName} -m set -n {$currentVersionShort} -s {$currentState}{$this->escape()}" . EOL;
 
 
-        $out .= EOL . "Bye {$this->ansiRed()};({$this->ansiEnd()}" . EOLx2;
+        $out .= EOL . "Bye {$this->red()};({$this->escape()}" . EOLx2;
 
 
         if (!$this->isColorsEnabled) {
@@ -494,7 +491,7 @@ class SemanticVersion
         $output .= EOLx2;
         $this->searchAndUpdate(
             'README.md',
-            "[![State](https://img.shields.io/static/v1?label=%s&message=%s&color=blue)](%s)",
+            "[![State](https://img.shields.io/static/v1?label=%s&message=%s&color=blue 'Latest known version')](%s)",
             '<!-- __SEMANTIC_VERSION_LINE__ -->',
             $toState, $version, $repository
         );
@@ -502,7 +499,7 @@ class SemanticVersion
         $output .= EOLx2;
         $this->searchAndUpdate(
             'README.md',
-            "![Updated](https://img.shields.io/static/v1?label=upated&message=%s&color=lightgray)",
+            "![Updated](https://img.shields.io/static/v1?label=upated&message=%s&color=lightgray 'Latest known update date')",
             '<!-- __SEMANTIC_UPDATED_LINE__ -->',
             $lastUpdate
         );
@@ -533,7 +530,7 @@ class SemanticVersion
             if (!is_null($currentState)) {
                 $toState = $currentState;
             } else {
-                die ("{$this->ansiRed()}State couldn't be retrieved. Please fix your " . $this->currentVersionFile . " fole and retry.\n\nBye!{$this->ansiEnd()}" . EOLx2);
+                die ("{$this->red()}State couldn't be retrieved. Please fix your " . $this->currentVersionFile . " fole and retry.\n\nBye!{$this->escape()}" . EOLx2);
             }
         }
 
@@ -548,9 +545,9 @@ class SemanticVersion
         $this->set($newVersion, $toState);
         $output .= (PHP_EOL .
                 sprintf(
-                    "Your version was updated from {$this->ansiGreen()}%s{$this->ansiEnd()} to {$this->ansiGreen()}%s{$this->ansiEnd()}
+                    "Your version was updated from {$this->green()}%s{$this->escape()} to {$this->green()}%s{$this->escape()}
 
-To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()} 
+To revert this change please run: {$this->green()}%s{$this->escape()} 
 ",
                     $oldVersionFull, $newVersionFull, $revertCommand
                 )
@@ -569,7 +566,7 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
      *
      * DO NOT move this method in the structure without reason.
      *
-     * @return string Formatted filename:number + phpdoc
+     * @return string Formatted filename:number + phpdoc (if any)
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
@@ -601,8 +598,8 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
 
             if (SemanticVersionUtility::endsWith(trim($line), trim($lineEndsWith))) {
                 $txt[$lineNo] = $replaced . ' ' . $lineEndsWith . EOL;
-                echo sprintf("Changed line {$this->ansiGreen()}%s{$this->ansiEnd()} of {$this->ansiGreen()}%s{$this->ansiEnd()} to:", $lineNo, $filename) . EOL;
-                echo "{$this->ansiCyan()}" . $replaced . EOLx2 . "{$this->ansiEnd()}";
+                echo sprintf("Changed line {$this->green()}%s{$this->escape()} of {$this->green()}%s{$this->escape()} to:", $lineNo, $filename) . EOL;
+                echo "{$this->ansiCyan()}" . $replaced . EOLx2 . "{$this->escape()}";
             };
         }
         file_put_contents($filename, implode('', $txt));
@@ -645,8 +642,8 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
         $newState = ($state == 'stable') ? '' : '-' . $state;
 
         return [
-            sprintf("Generate new {$this->ansiCyan()}%s%s{$this->ansiEnd()} with ", $newVersion, $newState),
-            sprintf("{$this->ansiCyan()}php {$this->selfName} update %s{$this->ansiEnd()}", $state)
+            sprintf("Generate new {$this->ansiCyan()}%s%s{$this->escape()} with ", $newVersion, $newState),
+            sprintf("{$this->ansiCyan()}php {$this->selfName} update %s{$this->escape()}", $state)
         ];
     }
 
@@ -656,7 +653,7 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
      *
      * DO NOT move this method in the structure without reason.
      *
-     * @return string Formatted filename:number + phpdoc
+     * @return string Formatted filename:number + phpdoc (if any)
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
@@ -674,12 +671,12 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
     {
         if (!file_exists($this->currentVersionFile)) {
             if ($shyData) die('No data about current version or data are invalid');
-            die(sprintf("there is no `%s` file, please create it with {$this->ansiCyan()}php {$this->selfName} --init{$this->ansiEnd()} command", $this->currentVersionFile) . EOLx2);
+            die(sprintf("there is no `%s` file, please create it with {$this->ansiCyan()}php {$this->selfName} --init{$this->escape()} command", $this->currentVersionFile) . EOLx2);
         }
         $currentData = json_decode(file_get_contents($this->currentVersionFile), true);
         if (is_null($currentData)) {
             if ($shyData) die('No data about current version or data are invalid');
-            die(sprintf("{$this->ansiRed()}Invalid data in `%s` file.{$this->ansiEnd()}\n\nPlease fix it or remove the file and initialize your version again with: {$this->ansiGreen()}php {$this->selfName} --init{$this->ansiEnd()}", $this->currentVersionFile) . EOLx2);
+            die(sprintf("{$this->red()}Invalid data in `%s` file.{$this->escape()}\n\nPlease fix it or remove the file and initialize your version again with: {$this->green()}php {$this->selfName} --init{$this->escape()}", $this->currentVersionFile) . EOLx2);
         };
         return $currentData;
     }
@@ -719,7 +716,7 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
      *
      * DO NOT move this method in the structure without reason.
      *
-     * @return string Formatted filename:number + phpdoc
+     * @return string Formatted filename:number + phpdoc (if any)
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
@@ -728,38 +725,38 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
         return self::describeMethodItself();
     }
 
-    function ansiRed($orTick = false)
+    public function red($orTick = false)
     {
-        return $this->ansiColor($orTick, "\e[1;31m");
+        return $this->color($orTick, "\e[1;31m");
     }
 
-    function ansiGreen($orTick = false)
+    public function green($orTick = false)
     {
-        return $this->ansiColor($orTick, "\e[1;32m");
+        return $this->color($orTick, "\e[1;32m");
     }
 
 
-    function ansiBlue($orTick = false)
+    function blue($orTick = false)
     {
-        return $this->ansiColor($orTick, "\e[1;34m");
+        return $this->color($orTick, "\e[1;34m");
     }
 
     function ansiCyan($orTick = false)
     {
-        return $this->ansiColor($orTick, "\e[1;36m");
+        return $this->color($orTick, "\e[1;36m");
     }
 
-    function ansiWhite($orTick = false)
+    function white($orTick = false)
     {
-        return $this->ansiColor($orTick, "\e[1;37m");
+        return $this->color($orTick, "\e[1;37m");
     }
 
-    function ansiEnd($orTick = false)
+    function escape($orTick = false)
     {
-        return $this->ansiColor($orTick, "\e[0m");
+        return $this->color($orTick, "\e[0m");
     }
 
-    protected function ansiColor($orTick = false, $color = null)
+    protected function color($orTick = false, $color = null)
     {
 
         if ($orTick && ($this->isMarkdownOutput || !$this->isColorsEnabled)) {
@@ -777,7 +774,7 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
      *
      * DO NOT move this method in the structure without reason.
      *
-     * @return string Formatted filename:number + phpdoc
+     * @return string Formatted filename:number + phpdoc (if any)
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
@@ -870,7 +867,7 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
 
 
     /**
-     * TODO improve phpdoc
+     * Finds calling method by reflection and describes the file, line number and phpdoc if any.
      *
      * @param string $methodName Method which should be described, if null backtrace is used to find calling methodname
      *
@@ -887,16 +884,21 @@ To revert this change please run: {$this->ansiGreen()}%s{$this->ansiEnd()}
         $file = $method->getFileName();
         $line = $method->getStartLine();
         $phpdoc = $method->getDocComment();
+        $phpdoc = ($phpdoc)
+            ? '    ' . $phpdoc
+            : 'Missing!';
         $displayName = str_replace('____', '', $methodName);
 
 
-        return sprintf("`%s` starts at `%s:%d`\n\nphpdoc:\n\n     %s", $displayName, $file, $line, $phpdoc);
+        return sprintf("`%s` starts at `%s:%d`\n\nphpdoc:\n\n%s", $displayName, $file, $line, $phpdoc);
     }
 }
 
 
 /**
  * Class SemanticVersionUtility
+ *
+ * @author (c) 2020 Marcus Biesioroff <biesior@gmail.com>
  */
 class SemanticVersionUtility
 {
@@ -1003,9 +1005,15 @@ class SemanticVersionUtility
     }
 }
 
-class SemanticVersionHints
+/**
+ * Class SemanticVersionHelp
+ *
+ * @author (c) 2020 Marcus Biesioroff <biesior@gmail.com>
+ */
+class SemanticVersionHelp
 {
-    protected $registered = [];
+    protected $registeredParams = [];
+    protected $registeredCommands = [];
 
     protected $displayedLines = [];
 
@@ -1014,23 +1022,17 @@ class SemanticVersionHints
     protected $leftPaneSize = 0;
 
 
-    private function register($name)
-    {
-        if (in_array($name, $this->registered)) {
-            throw new Exception(sprintf('param with name `%s` is already registered!', $name), time());
-        } else {
-            $this->registered[] = $name;
-        }
-
-    }
-
-    public function render(bool $markdownOutput = false, bool $isColorEnabled = false)
+    /**
+     * Renders help to console output or as a Markdown depending on arguments
+     *
+     * @param bool $markdownOutput
+     * @param bool $isColorEnabled
+     * @param bool $return If true returns rendered help instead displaying it
+     */
+    public function render(bool $markdownOutput = false, bool $isColorEnabled = false, $return = false)
     {
 
         $out = '';
-
-//        print_r($this->registered);
-//        print_r($this->displayedLines);
         foreach ($this->displayedLines as $line) {
             if ($line['kind'] == 'param') {
                 $param = $line['param'];
@@ -1091,39 +1093,87 @@ class SemanticVersionHints
             }
         }
 
-        echo $out;
+        if ($return) {
+            return $out;
+        } else {
+            echo $out;
+        }
+
     }
 
 
-    private function addDisplayLine($kind, $param, $data, $isFirst = false, $isLast = false)
+    /**
+     * Only parameter in given group is marked as first and last at once.
+     *
+     * Determining if element is first or last is used for help rendering (also for Markdown)
+     *
+     * @param       $name
+     * @param array $hint
+     *
+     * @return SemanticVersionHelp
+     */
+    public function addCommand($name, array $hint): SemanticVersionHelp
     {
-        $this->displayedLines[] = ['kind' => $kind, 'param' => $param, 'data' => $data, 'is_first' => $isFirst, 'is_last' => $isLast];
+        $this->registerCommand($name);
+        return $this;
+//        return $this->addNextParam($short, $long, $hint, true, true);
     }
 
-    public function addFirstParam($short, $long, array $hint)
-    {
-        return $this->addNextParam($short, $long, $hint, true, false);
-    }
-
-    public function addLastParam($short, $long, array $hint)
-    {
-        return $this->addNextParam($short, $long, $hint, false, true);
-    }
-
-    public function addOnlyParam($short, $long, array $hint)
+    /**
+     * Only parameter in given group is marked as first and last at once.
+     *
+     * Determining if element is first or last is used for help rendering (also for Markdown)
+     *
+     * @param       $short
+     * @param       $long
+     * @param array $hint
+     *
+     * @return SemanticVersionHelp
+     */
+    public function addOnlyParam($short, $long, array $hint): SemanticVersionHelp
     {
         return $this->addNextParam($short, $long, $hint, true, true);
     }
 
-    public function addNextParam($short, $long, array $hint, $firstInGroup = false, $lastInGroup = false): SemanticVersionHints
+    /**
+     * First parameter in given group is marked as first.
+     *
+     * Determining if element is first or last is used for help rendering (also for Markdown)
+     *
+     * @param       $short
+     * @param       $long
+     * @param array $hint
+     *
+     * @return SemanticVersionHelp
+     */
+    public function addFirstParam($short, $long, array $hint): SemanticVersionHelp
+    {
+        return $this->addNextParam($short, $long, $hint, true, false);
+    }
+
+    /**
+     * Each next parameter in given group is NOT marked as first neither last.
+     *
+     * Determining if element is first or last is used for help rendering (also for Markdown)
+     *
+     * @param       $short
+     * @param       $long
+     * @param array $hint
+     * @param bool  $firstInGroup
+     * @param bool  $lastInGroup
+     *
+     * @return SemanticVersionHelp
+     * @throws Exception
+     */
+    public function addNextParam($short, $long, array $hint, $firstInGroup = false, $lastInGroup = false): SemanticVersionHelp
     {
         $parts = [];
         if (!is_null($short)) {
-            $this->register($short);
+            $this->registerParam($short);
             $parts[] = '-' . self::removeColon($short);
         }
         if (!is_null($long)) {
-            $this->register($long);
+            $this->registerParam($long);
             $parts[] = '--' . self::removeColon($long);
         }
 
@@ -1140,28 +1190,58 @@ class SemanticVersionHints
         return $this;
     }
 
+    /**
+     * First parameter in given group is marked as last.
+     *
+     * Determining if element is first or last is used for help rendering (also for Markdown)
+     *
+     * @param string|null $short
+     * @param string|null $long
+     * @param array       $hint
+     *
+     * @return SemanticVersionHelp
+     */
+    public function addLastParam($short, $long, array $hint)
+    {
+        return $this->addNextParam($short, $long, $hint, false, true);
+    }
 
-    public function addHeader(array $header, int $level = 3): SemanticVersionHints
+
+    public function addHeader(array $header, int $level = 3): SemanticVersionHelp
     {
         $this->addDisplayLine('header', $level, $header);
         return $this;
     }
 
-    public function startGroup($uniqueGroupId): SemanticVersionHints
-    {
-        $this->addDisplayLine('group-start', null, $uniqueGroupId);
-        return $this;
-    }
-
-    public function endGroup($uniqueGroupId): SemanticVersionHints
-    {
-        $this->addDisplayLine('group-end', null, $uniqueGroupId);
-        return $this;
-    }
 
     public static function removeColon(string $value): string
     {
         return str_replace(':', '', $value);
+    }
+
+    protected function registerParam($name)
+    {
+        if (in_array($name, $this->registeredParams)) {
+            $code = 1598060717;
+            throw new Exception(sprintf('The param with name `%s` is already registered! Code: %s', $name, $code), $code);
+        } else {
+            $this->registeredParams[] = $name;
+        }
+    }
+
+    protected function registerCommand($name)
+    {
+        if (in_array($name, $this->registeredCommands)) {
+            $code = time();
+            throw new Exception(sprintf('The command with name `%s` is already registered! Code: %s', $name, $code), $code);
+        } else {
+            $this->registeredParams[] = $name;
+        }
+    }
+
+    protected function addDisplayLine($kind, $param, $data, $isFirst = false, $isLast = false)
+    {
+        $this->displayedLines[] = ['kind' => $kind, 'param' => $param, 'data' => $data, 'is_first' => $isFirst, 'is_last' => $isLast];
     }
 }
 
