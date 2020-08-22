@@ -325,30 +325,21 @@ class SemanticVersion
                 "- second is version like {$this->green(true)}alpha{$this->escape(true)}"
             ]);
 
-        $help
-            ->addHeader([
-                'Commands',
-                'Some functionalities are available by commands instead of parameters',
-                'That means you should use them as',
-                '',
-                "{$this->green(true)}php {$this->selfName} <command>{$this->escape(true)}",
-                '',
-                'i.e. to rise the PATCH version just use that command:',
-                '',
-                "{$this->green(true)}php {$this->selfName} patch{$this->escape(true)}",
-            ])
-            ->addHeader(['Available commands'], 4)
-            ->addCommand(null, 'patch', ['foo'])
-            ->addCommand(null, 'patch', ['foo']);
-//            ->addHeader(['Commands'], 4)
-//            ->addFirstParam(null, 'patch', ["Increases PATCH version i.e.: {$this->green(true)}0.1.0-alpha{$this->escape(true)} > {$this->green(true)}0.1.1-alpha{$this->escape(true)}"])
-//            ->addNextParam(null, 'minor', ["Increases MINOR version i.e.: {$this->green(true)}0.1.1-alpha{$this->escape(true)} > {$this->green(true)}0.2.0-alpha{$this->escape(true)}"])
-//            ->addNextParam(null, 'major', ["Increases MINOR version i.e.: {$this->green(true)}0.2.0-alpha{$this->escape(true)} > {$this->green(true)}1.0.0-alpha{$this->escape(true)}"])
-//            ->addLastParam(null, 'set:', [
-//                "Requires one or two following params version and state",
-//                "- first is version like {$this->green(true)}1.2.3{$this->escape(true)}",
-//                "- second is version like {$this->green(true)}alpha{$this->escape(true)}"
-//            ]);
+//        $help
+//            ->addHeader([
+//                'Commands',
+//                'Some functionalities are available by commands instead of parameters',
+//                'That means you should use them as',
+//                '',
+//                "{$this->green(true)}php {$this->selfName} <command>{$this->escape(true)}",
+//                '',
+//                'i.e. to rise the PATCH version just use that command:',
+//                '',
+//                "{$this->green(true)}php {$this->selfName} patch{$this->escape(true)}",
+//            ])
+//            ->addHeader(['Available commands'], 4)
+//            ->addCommand(null, ['patch'], ['foo']);
+
 
 
         $help->render($this->isMarkdownOutput, $this->isColorsEnabled);
