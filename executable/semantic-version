@@ -1,0 +1,25 @@
+#!/bin/bash
+
+for LASTARG in "$@"; do :; done
+
+if [[ -d $LASTARG ]]; then
+  echo switched to "$LASTARG"
+  cd "$LASTARG" || return
+fi
+
+if php semantic-version.php "$@" --from-bash ; then
+  exit 0
+else
+  echo -e "
+\033[0;31mIt looks there is no semantic-version.php in this directory.\033[0m
+
+Maybe you need to check in another folder, or file was renamed.
+
+To get more help and/or newest release please visit:
+
+https://github.com/biesior/semantic-version
+"
+  exit 1
+fi
+
+
