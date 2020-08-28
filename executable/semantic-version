@@ -7,7 +7,7 @@ if [[ -d $LASTARG ]]; then
   cd "$LASTARG" || return
 fi
 
-if php semantic-version.php "$@" --from-bash ; then
+if php semantic-version.php "$@" --from-bash=semantic-version ; then
   exit 0
 else
   echo -e "

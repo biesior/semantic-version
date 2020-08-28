@@ -3,7 +3,7 @@
   
 Author (c) 2020 Marcus Biesioroff biesior@gmail.com  
 Newest version can be found at https://github.com/biesior/semantic-version  
-Last update for this help at `2020-08-27 17:03:51`  
+Last update for this help at `2020-08-28 02:30:49`  
   
 
 
@@ -31,15 +31,13 @@ For more details please refer to these resources:
 
 #### Sample usages  
   
-- `php semantic-version.php -xc <other params>` to display with clean output without colors
-  
-- `php semantic-version.php -hxc` to displays monochromatic help with clean output.
-  
+- `php semantic-version.php -xc <other params>` to display with clean output without colors  
+- `php semantic-version.php -hxc` to displays monochromatic help with clean output.  
 - `php semantic-version.php -h --markdown > HELP.md` to display this help as a markdown and ie save it to file.  
 - etc.  
 
 
-#### Parameters  
+#### <options>  
 
 ```
 -c, --clean        If set console will be cleaned for better output
@@ -57,7 +55,7 @@ For more details please refer to these resources:
 ### Init, set, update or kill  
 
 
-#### Parameters  
+#### <options>  
 
 ```
 -i, --init         Create new version by default it will be `0.0.1-alpha`
@@ -85,19 +83,23 @@ For more details please refer to these resources:
 You can just upgrade existing project with PATCH, MINOR or MAJOR version like  
 
 
-#### Parameters  
+#### <options>  
 
 ```
 --patch            Increases PATCH version i.e.: `0.1.0-alpha` > `0.1.1-alpha`
+                   `php semantic-version.php --patch`
 
 --minor            Increases MINOR version i.e.: `0.1.1-alpha` > `0.2.0-alpha`
+                   `php semantic-version.php --minor`
 
 --major            Increases MINOR version i.e.: `0.2.0-alpha` > `1.0.0-alpha`
+                   `php semantic-version.php --major`
 
 --set              Requires one or two following params version and state- first is version like `1.2.3`
                    - second is version like `alpha`}
 ```
 
 ### If this doc was too long to read in terminal consider visiting  
+  
 - https://github.com/biesior/semantic-version/blob/master/HELP.md  
 
