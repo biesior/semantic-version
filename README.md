@@ -56,7 +56,7 @@ Ready to use `bash` script named `semantic-version` (without extension) can be f
 
 where:  
 `/path/to/executable/` is the absolute path of the folder where you keep your executable scripts.  
-`/path/to/download/`   is the absolute path of the folder where you downloaded or cloned the `semantic-version` from this repo.
+`/path/to/downloaded/` is the absolute path of the folder where you downloaded or cloned the `semantic-version` from this repo.
 
 If you don't have any executable scripts and don't want to create new folder for this only, just use it in downloaded localization
 
