@@ -2,7 +2,7 @@
 
 [![Donate](https://img.shields.io/static/v1?label=Donate&message=paypal.me/biesior&color=brightgreen "Donate the contributor via PayPal.me, amount is up to you")](https://www.paypal.me/biesior/19.99EUR)
 [![State](https://img.shields.io/static/v1?label=alpha&message=0.0.12&color=blue 'Latest known version')](https://github.com/biesior/semantic-version/tree/0.0.12-alpha) <!-- __SEMANTIC_VERSION_LINE__ -->
-![Updated](https://img.shields.io/static/v1?label=upated&message=2020-08-28+01:56:30&color=lightgray 'Latest known update date') <!-- __SEMANTIC_UPDATED_LINE__ -->
+![Updated](https://img.shields.io/static/v1?label=upated&message=2020-08-28+01:59:37&color=lightgray 'Latest known update date') <!-- __SEMANTIC_UPDATED_LINE__ -->
 [![Minimum PHP version](https://img.shields.io/static/v1?label=PHP&message=7.0.0+or+higher&color=blue "Minimum PHP version")](https://www.php.net/releases/7_0_0.php)
 
 ### 0. Disclaimer
