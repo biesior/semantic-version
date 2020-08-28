@@ -1347,16 +1347,7 @@ class SemanticVersionUtility
         return mb_strlen($variable);
     }
 
-    // todo remove finaly if no use
-//    public static function linkOrHighlight($value, $forMd = false)
-//    {
-//        if ($forMd) {
-//            return "{$value}";
-//        } else {
-////            return "{$this->ansiGreen()}{$value}{$this->ansiEnd()}";
-////            return "{$this->ansiGreen()}{$value}{$this->ansiEnd()}";
-//        }
-//    }
+
 
     /** @noinspection PhpUnused */
     public static function startsWith($haystack, $needle)
@@ -1376,7 +1367,7 @@ class SemanticVersionUtility
     }
 
     /**
-     *  TODO improve phpdoc
+     * Text is aligned to left with added spaces to satisfy minimum length
      *
      * @param string  $value
      * @param integer $minLen
@@ -1395,13 +1386,8 @@ class SemanticVersionUtility
         }
     }
 
-    public static function prepend($value, $minLen, $withChar = ' '): string
-    {
-        return str_repeat($withChar, $minLen) . $value;
-    }
-
     /**
-     * Fill to right
+     * Text is aligned to right with added spaces to satisfy minimum length
      *
      * @param string  $value
      * @param integer $minLen
@@ -1418,6 +1404,11 @@ class SemanticVersionUtility
         } else {
             return $value;
         }
+    }
+
+    public static function prepend($value, $minLen, $withChar = ' '): string
+    {
+        return str_repeat($withChar, $minLen) . $value;
     }
 
     /** @noinspection PhpUnused */
