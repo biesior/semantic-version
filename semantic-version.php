@@ -85,7 +85,7 @@ class SemanticVersion
             'long'  => [
                 'debug',
                 'markdown',
-                'from-bash',
+                'from-bash::',
                 'test-formats'
             ]
         ];
@@ -102,8 +102,10 @@ class SemanticVersion
         if (array_key_exists('x', $options)) {
             $this->isColorsEnabled = false;
         }
-        if (array_key_exists('from-bash', $options)) {
-            $this->selfName = false;
+
+
+        if (array_key_exists('from-bash', $options) && SemanticVersionUtility::stringLength(trim($options['from-bash'])) != 0) {
+            $this->selfName = trim($options['from-bash']);
         }
         if (array_key_exists('test-formats', $options)) {
             echo $this->testFormats(true, false);
@@ -428,17 +430,27 @@ For more details please refer to these resources:
                 new SemanticVersionHelpParam(
                     null,
                     'patch',
-                    "Increases PATCH version i.e.: {$this->wrapGreen('0.1.0-alpha', true)} > {$this->wrapGreen('0.1.1-alpha', true)}"
+                    [
+                        "Increases PATCH version i.e.: {$this->wrapGreen('0.1.0-alpha', true)} > {$this->wrapGreen('0.1.1-alpha', true)}",
+                        $this->wrapCodeSample($this->selfName . ' --patch', true)
+                    ]
                 ),
                 new SemanticVersionHelpParam(
                     null,
                     'minor',
-                    "Increases MINOR version i.e.: {$this->wrapGreen('0.1.1-alpha', true)} > {$this->wrapGreen('0.2.0-alpha', true)}"
+
+                    [
+                        "Increases MINOR version i.e.: {$this->wrapGreen('0.1.1-alpha', true)} > {$this->wrapGreen('0.2.0-alpha', true)}",
+                        $this->wrapCodeSample($this->selfName . ' --minor', true)
+                    ]
                 ),
                 new SemanticVersionHelpParam(
                     null,
                     'major',
-                    "Increases MINOR version i.e.: {$this->wrapGreen('0.2.0-alpha', true)} > {$this->wrapGreen('1.0.0-alpha', true)}"
+                    [
+                        "Increases MINOR version i.e.: {$this->wrapGreen('0.2.0-alpha', true)} > {$this->wrapGreen('1.0.0-alpha', true)}",
+                        $this->wrapCodeSample($this->selfName . ' --major', true)
+                    ]
                 ),
                 new SemanticVersionHelpParam(
                     null,
@@ -1348,7 +1360,6 @@ class SemanticVersionUtility
     }
 
 
-
     /** @noinspection PhpUnused */
     public static function startsWith($haystack, $needle)
     {
@@ -1363,7 +1374,7 @@ class SemanticVersionUtility
             return true;
         }
 
-        return substr($haystack, -$length)=== $needle;
+        return substr($haystack, -$length) === $needle;
     }
 
     /**
