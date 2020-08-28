@@ -1,8 +1,8 @@
 # `semantic-version` project
 
 [![Donate](https://img.shields.io/static/v1?label=Donate&message=paypal.me/biesior&color=brightgreen "Donate the contributor via PayPal.me, amount is up to you")](https://www.paypal.me/biesior/19.99EUR)
-[![State](https://img.shields.io/static/v1?label=alpha&message=0.0.11&color=blue 'Latest known version')](https://github.com/biesior/semantic-version/tree/0.0.11-alpha) <!-- __SEMANTIC_VERSION_LINE__ -->
-![Updated](https://img.shields.io/static/v1?label=upated&message=2020-08-28+00:59:33&color=lightgray 'Latest known update date') <!-- __SEMANTIC_UPDATED_LINE__ -->
+[![State](https://img.shields.io/static/v1?label=alpha&message=0.0.12&color=blue 'Latest known version')](https://github.com/biesior/semantic-version/tree/0.0.12-alpha) <!-- __SEMANTIC_VERSION_LINE__ -->
+![Updated](https://img.shields.io/static/v1?label=upated&message=2020-08-28+01:59:37&color=lightgray 'Latest known update date') <!-- __SEMANTIC_UPDATED_LINE__ -->
 [![Minimum PHP version](https://img.shields.io/static/v1?label=PHP&message=7.0.0+or+higher&color=blue "Minimum PHP version")](https://www.php.net/releases/7_0_0.php)
 
 ### 0. Disclaimer
@@ -44,7 +44,7 @@ php semantic-version.php <options>
 
 If this satisfies you, you can skip this rest of this section.
 
-#### 4.2 System command
+#### 4.2 bash script as a system command
 
 Instead, you can create simple executable bash script to use it globally in your console with shorter version like 
 
@@ -52,47 +52,38 @@ Instead, you can create simple executable bash script to use it globally in your
 semantic-version <options> <optional-directory>
 ``` 
 
+Ready to use `bash` script named `semantic-version` (without extension) can be found in 'executable' folder in this repository.
+
+where:  
+`/path/to/executable/` is the absolute path of the folder where you keep your executable scripts.  
+`/path/to/downloaded/` is the absolute path of the folder where you downloaded or cloned the `semantic-version` from this repo.
+
+If you don't have any executable scripts and don't want to create new folder for this only, just use it in downloaded localization
+
 ```shell script
-mkdir /path/to/your/executables
-touch /path/to/your/executables/semantic-version
-chmod +x /path/to/your/executables/semantic-version
+chmod +x /path/to/downloaded/semantic-version
+```
+Otherwise, copy it to folder with your executable scripts (`mkdir` if required) and chmod it to make executable
+```shell script
+mkdir /path/to/executable
+cp /path/to/downloaded/executable/semantic-version /path/to/executable
+chmod +x /path/to/executable/semantic-version
 ```
 
-In your favourite editor just edit `/path/to/your/executable/semantic-version` and add these lines
+Just make sure it won't conflict with other exported paths. In case of doubts refer to section 5: Renaming.
+
+Export paths to it ie in `~/.bash_profile` depending on your OS
 
 ```shell script
-#!/bin/bash
-# ychy
+export PATH=/path/to/executable:$PATH
 
-for LASTARG in "$@"; do :; done
-
-if [[ -d $LASTARG ]]; then
-  echo switched to "$LASTARG"
-  cd "$LASTARG" || return
-fi
-
-if php semantic-version.php "$@" --from-bash ; then
-  exit 0
-else
-  echo -e "\033[0;31m
-It looks there is no semantic-version.php in this directory.\033[0m
-
-Please visit https://github.com/biesior/semantic-version to get newest release.
-"
-  exit 1
-fi
+#or 
+export PATH=/path/to/downloaded/executable:$PATH
 ```
-
-So finally you can use it from any place (without required `cd` to project like:
-
-```shell script
-
-```
-
-Export paths to it ie in `.bash_profile`
+and load paths with shell's builtin command `source` or re-open terminal
 
 ```shell script
-export PATH=/www/githubprojects.loc/bash-scripts/executable:$PATH
+source ~/.bash_profile 
 ```
 
 ### 5. Renaming
