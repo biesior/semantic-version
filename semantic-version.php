@@ -1,13 +1,13 @@
 <?php
 /** @noinspection PhpUnhandledExceptionInspection */
-declare(strict_types=1);
+//declare(strict_types=1);
 
 // Constants you can change
 // Especially REPOSITORY* can be changed per project
 const SEMANTIC_REPOSITORY = 'https://github.com/biesior/semantic-version/';
 const SEMANTIC_REPOSITORY_TREE = SEMANTIC_REPOSITORY . "tree/";
 const SEMANTIC_REPOSITORY_ISSUES = SEMANTIC_REPOSITORY . "issues";
-const SEMANTIC_VERSION_FILE = 'current-semantic-version.json';
+const SEMANTIC_VERSION_FILE = '.current-semantic-version.json';
 
 // constants for formatting, don't change with no reason
 const EOL = PHP_EOL;
@@ -113,11 +113,11 @@ class SemanticVersion
 
         if ($this->isDebugEnabled) {
             echo EOLx2;
-            echo $this->____cliActions() . EOLx2;
-            echo $this->____helperMethods() . EOLx2;
-            echo $this->____methodsForFetchingCurrentVersion() . EOLx2;
-            echo $this->____ansiMethods() . EOLx2;
-            echo $this->____additionalOfDifferentPurposes() . EOLx2;
+            echo $this->___cliActions() . EOLx2;
+            echo $this->___helperMethods() . EOLx2;
+            echo $this->___methodsForFetchingCurrentVersion() . EOLx2;
+            echo $this->___ansiMethods() . EOLx2;
+            echo $this->___additionalOfDifferentPurposes() . EOLx2;
             echo EOLx2;
         }
 
@@ -138,9 +138,9 @@ class SemanticVersion
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
-    private function ____cliActions(): string
+    private function ___cliActions(): string
     {
-        return self::describeMethodItself();
+        return SemanticVersion::describeMethodItself();
     }
 
     private function dispatcher()
@@ -173,6 +173,7 @@ class SemanticVersion
                 'folder:',
                 'set:',
                 'kill::',
+                'git-tag-current',
                 'markdown',
                 'debug',
             ]
@@ -206,6 +207,7 @@ class SemanticVersion
         $releaseMajor = $this->getOptValue($options, null, 'major');
         $kill = $this->getOptValue($options, null, 'kill');
 
+        $tagVersion = $this->getOptValue($options, null, 'git-tag-current');
 
         if ($this->isDebugEnabled) {
             echo EOL . 'Debug resolved options' . EOL;
@@ -242,6 +244,8 @@ class SemanticVersion
             $this->updateAction('minor', null);
         } else if (!is_null($releaseMajor)) {
             $this->updateAction('major', null);
+        } else if (!is_null($tagVersion)) {
+            $this->gitTagCurrentVersionAction();
         } else if (!is_null($mode)) {
             if ($mode == 'set') {
                 if (is_null($newVersion) || is_null($state)) {
@@ -410,6 +414,11 @@ For more details please refer to these resources:
                     'Displays current version of the project'
                 ),
                 new SemanticVersionHelpParam(
+                    'V',
+                    'version-verbose',
+                    'Displays verbose current version of the project'
+                ),
+                new SemanticVersionHelpParam(
                     null,
                     'kill::',
                     "({$this->wrapRed('destructive!')}) Deletes version file, you will need to start from beginning"
@@ -462,6 +471,17 @@ For more details please refer to these resources:
                 )
             );
 
+        $help
+            ->addHeader([
+                'GIT operations'
+            ])
+            ->addParams(
+                new SemanticVersionHelpParam(
+                    null,
+                    'git-tag-current',
+                    'Trying to add GIT tag for current semantic-version if doesn\'t exist'
+                )
+            );
 
         $help
             ->addHeader(
@@ -522,13 +542,15 @@ For more details please refer to these resources:
 
     private function versionVerboseAction()
     {
-        $output = '';
-        $projectName = $this->fetchCurrentProjectName();
-        $currentVersion = $this->fetchCurrentVersionToString();
-        $output .= "
-Current semantic version for {$this->wrapGreen($projectName )} project is:
+        $output = "
+{$this->wrapGreen('Current semantic version of the project', false, 1)}
 
-{$this->wrapGreen($currentVersion)}
+project:        {$this->wrapCodeSample($this->fetchCurrentProjectName())}
+version:        {$this->wrapCodeSample($this->fetchCurrentVersionToString())}
+version_number: {$this->wrapCodeSample($this->fetchCurrentVersion())}
+version_state:  {$this->wrapCodeSample($this->fetchCurrentState())}
+repository:     {$this->wrapCodeSample(SEMANTIC_REPOSITORY)}
+last_update:    {$this->wrapCodeSample($this->fetchCurrentLastUpdated())}
 
 ";
 
@@ -705,14 +727,18 @@ Bye {$this->wrapRed(';(')}
         $output = '';
 
         $now = new DateTime('now');
-        $lastUpdate = $now->format('Y-m-d+H:i:s');
+        $lastUpdate = $now->format('Y-m-d H:i:s');
+
+        $nowLink = new DateTime('now');
+        $lastUpdateLink = $nowLink->format('Y-m-d+H:i:s');
+
         $newVersionFull = $version . ($toState == 'stable' ? '' : '-' . $toState);
         $vers = [
             'project_name' => $this->fetchCurrentProjectName(), 'version' => $version, 'state' => $toState, 'last_update' => $lastUpdate,
         ];
         $this->putNormalizedCurrentFile($vers);
 
-        $repository = SEMANTIC_REPOSITORY_TREE . $newVersionFull;
+        $repository = SEMANTIC_REPOSITORY_TREE . 'v' . $newVersionFull;
 
         $output .= EOLx2;
         $this->searchAndUpdate(
@@ -727,7 +753,7 @@ Bye {$this->wrapRed(';(')}
             'README.md',
             "![Updated](https://img.shields.io/static/v1?label=upated&message=%s&color=lightgray 'Latest known update date')",
             '<!-- __SEMANTIC_UPDATED_LINE__ -->',
-            $lastUpdate
+            $lastUpdateLink
         );
         $output .= EOLx2;
 
@@ -805,6 +831,18 @@ To revert this change please run: {$this->wrapGreen('%s')}
 
     }
 
+    private function gitTagCurrentVersionAction()
+    {
+        $newTag = 'v' . $this->fetchCurrentVersionToString();
+        exec("git tag {$newTag}", $out, $ret);
+        if ($ret == 0) {
+            echo $this->wrapGreen("Tag '{$newTag}' was created.", false, 1) . EOLx2 .
+                "you can push now:" . EOL .
+                $this->wrapCodeSample("git push origin {$newTag}") . EOL;
+        } else {
+            echo $this->wrapRed('Some error occurred, check above output.') . PHP_EOL;
+        }
+    }
 
     /**
      * Non-public methods for repeating logic a.k.a helpers starts here
@@ -815,9 +853,9 @@ To revert this change please run: {$this->wrapGreen('%s')}
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
-    private function ____helperMethods(): string
+    private function ___helperMethods(): string
     {
-        return self::describeMethodItself();
+        return SemanticVersion::describeMethodItself();
     }
 
     private function searchAndUpdate(string $filename, string $sprintfStr, string $lineEndsWith, ...$params)
@@ -866,11 +904,11 @@ To revert this change please run: {$this->wrapGreen('%s')}
         echo PHP_EOL;
         echo 'repl: ' . $sprintfStr . EOL;
 
-        print_r([
-            'repl:' => $sprintfStr,
-            'matc:' => $lineMatches,
-            'parm:' => $params,
-        ]);
+//        print_r([
+//            'repl:' => $sprintfStr,
+//            'matc:' => $lineMatches,
+//            'parm:' => $params,
+//        ]);
 
 //        $replaced = '';
         if (count($params) == 1) {
@@ -951,9 +989,9 @@ To revert this change please run: {$this->wrapGreen('%s')}
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
-    private function ____methodsForFetchingCurrentVersion(): string
+    private function ___methodsForFetchingCurrentVersion(): string
     {
-        return self::describeMethodItself();
+        return SemanticVersion::describeMethodItself();
     }
 
     /**
@@ -1024,9 +1062,9 @@ Please fix it or remove the file and initialize your version again with: {$this-
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
-    private function ____ansiMethods(): string
+    private function ___ansiMethods(): string
     {
-        return self::describeMethodItself();
+        return SemanticVersion::describeMethodItself();
     }
 
 
@@ -1114,7 +1152,7 @@ Please fix it or remove the file and initialize your version again with: {$this-
      * @throws ReflectionException
      * @internal This method returns the filename and line number where group of specific methods starts
      */
-    private function ____additionalOfDifferentPurposes(): string
+    private function ___additionalOfDifferentPurposes(): string
     {
         return self::describeMethodItself();
     }
@@ -1217,7 +1255,7 @@ Please fix it or remove the file and initialize your version again with: {$this-
      * @throws ReflectionException
      * @internal Used for debug only
      */
-    private function describeMethodItself($methodName = null)
+    public static function describeMethodItself($methodName = null)
     {
         if (is_null($methodName)) {
             $methodName = debug_backtrace()[1]['function'];
@@ -1229,7 +1267,7 @@ Please fix it or remove the file and initialize your version again with: {$this-
         $phpdoc = ($phpdoc)
             ? '    ' . $phpdoc
             : 'Missing!';
-        $displayName = str_replace('____', '', $methodName);
+        $displayName = str_replace('___', '', $methodName);
 
 
         return sprintf("`%s` starts at `%s:%d`\n\nphpdoc:\n\n%s", $displayName, $file, $line, $phpdoc);
@@ -1344,6 +1382,21 @@ class SemanticVersionUtility
 {
 
     /**
+     * Public methods of SemanticVersionUtility::class starts here
+     *
+     * DO NOT move this method in the structure without reason.
+     *
+     * @return string Formatted filename:number + phpdoc (if any)
+     * @throws ReflectionException
+     * @internal This method returns the filename and line number where group of specific methods starts
+     * @noinspection PhpUnusedPrivateMethodInspection
+     */
+    private function ___publicMethods(): string
+    {
+        return SemanticVersion::describeMethodItself();
+    }
+
+    /**
      * Returns string's length
      *
      * @param string $variable
@@ -1447,6 +1500,111 @@ class SemanticVersionHelp
     protected $longestParam = 0;
     protected $leftPaneSize = 0;
 
+
+    /**
+     * Public methods of SemanticVersionHelp::class starts here
+     *
+     * DO NOT move this method in the structure without reason.
+     *
+     * @return string Formatted filename:number + phpdoc (if any)
+     * @throws ReflectionException
+     * @internal This method returns the filename and line number where group of specific methods starts
+     * @noinspection PhpUnusedPrivateMethodInspection
+     */
+    private function ___publicMethods(): string
+    {
+        return SemanticVersion::describeMethodItself();
+    }
+
+    public function addHeader($header, int $level = 3): SemanticVersionHelp
+    {
+        if (!is_array($header)) {
+            $header = explode(chr(10), $header);
+        }
+        $this->addDisplayLine('header', $level, $header);
+        return $this;
+    }
+
+
+    public function addParams(SemanticVersionHelpParam ...$params)
+    {
+        $i = 0;
+        $paramsCount = count($params);
+        foreach ($params as $param) {
+
+            $this->addNextParam(
+                $param->short,
+                $param->long,
+                $param->hint = (!is_array($param->hint)) ? explode(chr(10), $param->hint) : $param->hint,
+                $i == 0,
+                $i == $paramsCount - 1
+
+            );
+            $i++;
+        }
+        return $this;
+    }
+
+
+    /**
+     * Each next parameter in given group is NOT marked as first neither last.
+     *
+     * Determining if element is first or last is used for help rendering (also for Markdown)
+     *
+     * @param       $short
+     * @param       $long
+     * @param array $hint
+     * @param bool  $firstInGroup
+     * @param bool  $lastInGroup
+     *
+     * @return SemanticVersionHelp
+     * @throws Exception
+     */
+    public function addNextParam($short, $long, $hint, $firstInGroup = false, $lastInGroup = false): SemanticVersionHelp
+    {
+        $parts = [];
+        if (!is_null($short)) {
+            $this->registerParam($short);
+            $parts[] = '-' . self::removeColon($short);
+        }
+        if (!is_null($long)) {
+            $this->registerParam($long);
+            $parts[] = '--' . self::removeColon($long);
+        }
+
+        $uniqueKey = implode(', ', $parts);
+        $this->addDisplayLine('param', $uniqueKey, $hint, $firstInGroup, $lastInGroup);
+
+        $stringLength = SemanticVersionUtility::stringLength($uniqueKey);
+        if ($stringLength > $this->longestParam) {
+            $this->longestParam = $stringLength;
+            $this->leftPaneSize = $stringLength + 2;
+        }
+
+
+        return $this;
+    }
+
+    /**
+     * Only parameter in given group is marked as first and last at once.
+     *
+     * Determining if element is first or last is used for help rendering (also for Markdown)
+     *
+     * @param       $name
+     * @param array $hint
+     *
+     * @return SemanticVersionHelp
+     * @throws Exception
+     * @noinspection PhpUnused
+     * @noinspection PhpUnusedParameterInspection
+     */
+    public function addCommand($name, array $hint): SemanticVersionHelp
+    {
+        $this->registerCommand($name);
+        return $this;
+//        return $this->addNextParam($short, $long, $hint, true, true);
+    }
+
     /**
      * Renders help to console output or as a Markdown depending on arguments
      *
@@ -1538,98 +1696,24 @@ class SemanticVersionHelp
     }
 
 
-    /**
-     * Only parameter in given group is marked as first and last at once.
-     *
-     * Determining if element is first or last is used for help rendering (also for Markdown)
-     *
-     * @param       $name
-     * @param array $hint
-     *
-     * @return SemanticVersionHelp
-     * @throws Exception
-     * @noinspection PhpUnused
-     * @noinspection PhpUnusedParameterInspection
-     */
-    public function addCommand($name, array $hint): SemanticVersionHelp
-    {
-        $this->registerCommand($name);
-        return $this;
-//        return $this->addNextParam($short, $long, $hint, true, true);
-    }
-
-
-    public function addParams(SemanticVersionHelpParam ...$params)
-    {
-        $i = 0;
-        $paramsCount = count($params);
-        foreach ($params as $param) {
-
-            $this->addNextParam(
-                $param->short,
-                $param->long,
-                $param->hint = (!is_array($param->hint)) ? explode(chr(10), $param->hint) : $param->hint,
-                $i == 0,
-                $i == $paramsCount - 1
-
-            );
-            $i++;
-        }
-        return $this;
-    }
-
-    /**
-     * Each next parameter in given group is NOT marked as first neither last.
-     *
-     * Determining if element is first or last is used for help rendering (also for Markdown)
-     *
-     * @param       $short
-     * @param       $long
-     * @param array $hint
-     * @param bool  $firstInGroup
-     * @param bool  $lastInGroup
-     *
-     * @return SemanticVersionHelp
-     * @throws Exception
-     */
-    public function addNextParam($short, $long, $hint, $firstInGroup = false, $lastInGroup = false): SemanticVersionHelp
-    {
-        $parts = [];
-        if (!is_null($short)) {
-            $this->registerParam($short);
-            $parts[] = '-' . self::removeColon($short);
-        }
-        if (!is_null($long)) {
-            $this->registerParam($long);
-            $parts[] = '--' . self::removeColon($long);
-        }
-
-        $uniqueKey = implode(', ', $parts);
-        $this->addDisplayLine('param', $uniqueKey, $hint, $firstInGroup, $lastInGroup);
-
-        $stringLength = SemanticVersionUtility::stringLength($uniqueKey);
-        if ($stringLength > $this->longestParam) {
-            $this->longestParam = $stringLength;
-            $this->leftPaneSize = $stringLength + 2;
-        }
-
-
-        return $this;
-    }
-
-    public function addHeader($header, int $level = 3): SemanticVersionHelp
-    {
-        if (!is_array($header)) {
-            $header = explode(chr(10), $header);
-        }
-        $this->addDisplayLine('header', $level, $header);
-        return $this;
-    }
-
-
     public static function removeColon(string $value): string
     {
         return str_replace(':', '', $value);
+    }
+
+    /**
+     * Protected methods of SemanticVersionHelp::class starts here
+     *
+     * DO NOT move this method in the structure without reason.
+     *
+     * @return string Formatted filename:number + phpdoc (if any)
+     * @throws ReflectionException
+     * @internal This method returns the filename and line number where group of specific methods starts
+     * @noinspection PhpUnusedPrivateMethodInspection
+     */
+    private function ___protectedMethods(): string
+    {
+        return SemanticVersion::describeMethodItself();
     }
 
     protected function registerParam($name)
@@ -1665,7 +1749,6 @@ class SemanticVersionHelp
  */
 class SemanticVersionHelpParam
 {
-
     public $short;
     public $long;
     public $hint;
