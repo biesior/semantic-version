@@ -1,8 +1,8 @@
 # `semantic-version` project
 
 [![Donate](https://img.shields.io/static/v1?label=Donate&message=paypal.me/biesior&color=brightgreen "Donate the contributor via PayPal.me, amount is up to you")](https://www.paypal.me/biesior/19.99EUR)
-[![State](https://img.shields.io/static/v1?label=alpha&message=0.0.14&color=blue 'Latest known version')](https://github.com/biesior/semantic-version/tree/0.0.14-alpha) <!-- __SEMANTIC_VERSION_LINE__ -->
-![Updated](https://img.shields.io/static/v1?label=upated&message=2020-08-28+02:27:04&color=lightgray 'Latest known update date') <!-- __SEMANTIC_UPDATED_LINE__ -->
+[![State](https://img.shields.io/static/v1?label=alpha&message=0.0.15&color=blue 'Latest known version')](https://github.com/biesior/semantic-version/tree/0.0.15-alpha) <!-- __SEMANTIC_VERSION_LINE__ -->
+![Updated](https://img.shields.io/static/v1?label=upated&message=2020-08-30+03:51:48&color=lightgray 'Latest known update date') <!-- __SEMANTIC_UPDATED_LINE__ -->
 [![Minimum PHP version](https://img.shields.io/static/v1?label=PHP&message=7.0.0+or+higher&color=blue "Minimum PHP version")](https://www.php.net/releases/7_0_0.php)
 
 ### 0. Disclaimer
@@ -52,10 +52,8 @@ Instead, you can create simple executable bash script to use it globally in your
 semantic-version <options> <optional-directory>
 ``` 
 
-Ready to use `bash` script named `semantic-version` (without extension) can be found in 'executable' folder in this repository.
+Ready to use `bash` script named `semantic-version` (without extension) can be found in `bin` folder in this repository.
 
-where:  
-`/path/to/executable/` is the absolute path of the folder where you keep your executable scripts.  
 `/path/to/downloaded/` is the absolute path of the folder where you downloaded or cloned the `semantic-version` from this repo.
 
 If you don't have any executable scripts and don't want to create new folder for this only, just use it in downloaded localization
@@ -63,11 +61,15 @@ If you don't have any executable scripts and don't want to create new folder for
 ```shell script
 chmod +x /path/to/downloaded/semantic-version
 ```
-Otherwise, copy it to folder with your executable scripts (`mkdir` if required) and chmod it to make executable
+
+Otherwise, copy `semantic-version` command to folder with your executable scripts (`mkdir` if required) and chmod it to make executable
+
+`/path/to/your/bin/` is the absolute path of the folder where you keep your executable scripts.
+
 ```shell script
-mkdir /path/to/executable
-cp /path/to/downloaded/executable/semantic-version /path/to/executable
-chmod +x /path/to/executable/semantic-version
+mkdir /path/to/your/bin
+cp /path/to/downloaded/bin/semantic-version /path/to/your/bin
+chmod +x /path/to/your/bin/semantic-version
 ```
 
 Just make sure it won't conflict with other exported paths. In case of doubts refer to section 5: Renaming.
@@ -75,10 +77,10 @@ Just make sure it won't conflict with other exported paths. In case of doubts re
 Export paths to it ie in `~/.bash_profile` depending on your OS
 
 ```shell script
-export PATH=/path/to/executable:$PATH
+export PATH=/path/to/your/bin:$PATH
 
 #or 
-export PATH=/path/to/downloaded/executable:$PATH
+export PATH=/path/to/downloaded/bin:$PATH
 ```
 and load paths with shell's builtin command `source` or re-open terminal
 
